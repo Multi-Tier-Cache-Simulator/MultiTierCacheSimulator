@@ -1,0 +1,20 @@
+########## Run ##########
+Tier "DRAM":
+    >> Used size 1.191182336 Go 
+    >> 90 total write
+        >> 90 because of user activity because of migration
+    >> 333 total reads
+        >> 333 because of user activity
+    >> Time spent reading 0.446 ms
+    >> Time spent writing 0.568 ms
+
+Tier "NVMe":
+    >> Used size 0.369098752 Go 
+    >> 11 total write
+        >> 11 because of user activity because of migration
+    >> 11 total reads
+        >> 11 because of user activity
+    >> Time spent reading 0.093 ms
+    >> Time spent writing 0.093 ms
+
+

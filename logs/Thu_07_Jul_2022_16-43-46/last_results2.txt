@@ -1,0 +1,11 @@
+########## Run ##########
+Tier "DRAM":
+    >> Used size 1.50994944 Go 
+    >> 90 total write
+        >> 90 because of user activity because of migration
+    >> 333 total reads
+        >> 333 because of user activity
+    >> Time spent reading 0.447 ms
+    >> Time spent writing 0.121 ms
+
+
