@@ -9,5 +9,4 @@ class Policy:
         self.env = env
         tier.register_listener(self)
 
-    def on_packet_access(self, timestamp: int, name: str, size: int, priority: str, isWrite: bool):
-        pass
+

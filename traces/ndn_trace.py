@@ -18,7 +18,7 @@ class NDNTrace(Trace):
                 if trace_len_limit > 0:
                     self.data = self.data[:min(len(self.data), trace_len_limit)]
 
-    def read_data_line(self, env, storage, line, logs_enabled=True):
+    def read_data_line(self, env, storage, line, tstart_tlast, logs_enabled=True):
         """Read a line, and fire events if necessary"""
         packetType, timestamp, name, size, priority, responseTime = line
 
@@ -29,20 +29,22 @@ class NDNTrace(Trace):
         # if data packet --> write it in the default tier
         if packetType == "d":
             tier = storage.get_default_tier()
-            tier.write_packet(timestamp, name, size, priority)
+            tier.write_packet(timestamp, tstart_tlast, name, size, priority)
         elif packetType == "i":
             tier = storage.index.get_packet_tier(name)
             if tier == -1:  # if data not in cache --> cache miss
                 print("\"" + name.__str__() + "\" cache miss")
+                storage.get_default_tier().cmr += 1
+                storage.get_default_tier().time_spent_reading += responseTime
             else:  # if data not in default tier --> migrate data to default tier
                 if tier.name.__str__() != storage.get_default_tier().name.__str__():
-                    print(tier)
-                    print(storage.get_default_tier())
-                    storage.migrate(timestamp, name, size, storage.get_default_tier())
+                    tier.number_of_prefetching_from_this_tier += 1
+                    storage.get_default_tier().number_of_prefetching_to_this_tier += 1
+                    storage.get_default_tier().write_packet(timestamp, tstart_tlast, name, size, priority)
                     print(
                         "Migrate \"" + name.__str__() + "\" to default tier " + storage.get_default_tier().name.__str__())
-                else:  # else packet access
-                    tier.read_packet(timestamp, name, size, priority)
+                else:  # else read
+                    tier.read_packet(timestamp, tstart_tlast, name, size, priority)
         else:
             raise RuntimeError(f'Unknown operation code {type}')
 
