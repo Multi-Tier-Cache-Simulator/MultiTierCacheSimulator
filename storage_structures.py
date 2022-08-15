@@ -61,6 +61,9 @@ class Tier:
 
         self.p = 0  # Target size for the list T1
 
+        # Random structure
+        self.random_struct = []
+
         # LFU structure
         self.min_freq = float("inf")
         self.freq_to_nodes = collections.defaultdict(collections.OrderedDict)
@@ -82,24 +85,29 @@ class Tier:
     def register_listener(self, listener: "Policy"):
         self.listeners += [listener]
 
-    def read_packet(self, timestamp, tstart_tlast, name, size, priority):
+    def read_packet(self, tstart_tlast, name, size, priority):
         """
         :return: time in seconds until operation completion
         """
         for listener in self.listeners:
-            listener.on_packet_access(timestamp, tstart_tlast, name, size, priority, False)
+            listener.on_packet_access(tstart_tlast, name, size, priority, False)
 
-    def write_packet(self, timestamp, tstart_tlast, name, size, priority, drop="n"):
+    def write_packet(self, tstart_tlast, name, size, priority, drop="n"):
         """
         :return: time in seconds until operation completion
         """
         for listener in self.listeners:
-            listener.on_packet_access(timestamp, tstart_tlast, name, size, priority, True, drop)
+            print("listeners")
+            listener.on_packet_access(tstart_tlast, name, size, priority, True, drop)
 
 
 class Index:
     def __init__(self):
         self.index = dict()  # key: packet_name, value: tier/t1,t2,b1,b2
+
+    def __str__(self):
+        for key, value in self.index.items():
+            print(key + value.name.__str__)
 
     # return the tier where the packet is
     def get_packet_tier(self, name: str):

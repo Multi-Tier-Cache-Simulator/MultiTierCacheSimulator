@@ -1,3 +1,4 @@
+import math
 import numpy
 from policies.policy import Policy
 from storage_structures import StorageManager, Tier
@@ -5,10 +6,12 @@ from simpy.core import Environment
 
 
 class ARCPolicy(Policy):
+
     def __init__(self, tier: Tier, storage: StorageManager, env: Environment):
         Policy.__init__(self, tier, storage, env)
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / 16777216)
 
-    def replace(self, timestamp: int, tstart_tlast: int, name: str, size: int, priority: str):
+    def replace(self, tstart_tlast: int, name: str, size: int, priority: str):
         """
                If (T1 is not empty) and ((T1 length exceeds the target p) or (x is in DISK and T1 length == p))
                    Delete the LRU page in T1 (also remove it from the cache), and move it to MRU position in B1.
@@ -49,7 +52,7 @@ class ARCPolicy(Policy):
                 print("migrate " + old.__str__() + " to disk and drop HPC")
                 target_tier_id = self.storage.tiers.index(self.tier) + 1
                 try:
-                    self.storage.tiers[target_tier_id].write_packet(timestamp, tstart_tlast, old, size, priority,
+                    self.storage.tiers[target_tier_id].write_packet(tstart_tlast, old, size, priority,
                                                                     "h")
                     self.storage.tiers[target_tier_id].number_of_eviction_to_this_tier += 1
                 except:
@@ -59,22 +62,24 @@ class ARCPolicy(Policy):
                 print("migrate " + old.__str__() + " to disk and drop LPC")
                 target_tier_id = self.storage.tiers.index(self.tier) + 1
                 try:
-                    self.storage.tiers[target_tier_id].write_packet(timestamp, tstart_tlast, old, size, priority,
+                    self.storage.tiers[target_tier_id].write_packet(tstart_tlast, old, size, priority,
                                                                     "l")
                     self.storage.tiers[target_tier_id].number_of_eviction_to_this_tier += 1
                 except:
                     print("no other tier")
                 return
 
-    def on_packet_access(self, timestamp: int, tstart_tlast: int, name: str, size: int, priority: str, isWrite: bool, drop="n"):
+    def on_packet_access(self, tstart_tlast: int, name: str, size: int, priority: str, isWrite: bool, drop="n"):
         # Case I: x is in T1 or T2. READ FROM T1 OR T2
         #  A cache hit has occurred in ARC(c) and DBL(2c)
         #   Move x to MRU position in T2.
         print("==========================")
+        print("DRAM")
         print("t1 = " + self.tier.t1.__str__() + " size == " + self.tier.t1.__len__().__str__())
         print("t2 = " + self.tier.t2.__str__() + " size == " + self.tier.t2.__len__().__str__())
         print("b1 = " + self.tier.b1.__str__() + " size == " + self.tier.b1.__len__().__str__())
         print("b2 = " + self.tier.b2.__str__() + " size == " + self.tier.b2.__len__().__str__())
+        print("dram index = " + self.storage.index.index.__str__())
         print("==========================")
         if self.tier.t1.__contains__(name):
             print(name.__str__() + " cache hit in t1")
@@ -112,8 +117,8 @@ class ARCPolicy(Policy):
 
         if self.tier.b1.__contains__(name):
             print(name.__str__() + " found in b1")
-            self.tier.p = min(71, self.tier.p + max(len(self.tier.b2) / len(self.tier.b1), 1))
-            self.replace(timestamp, tstart_tlast, name, size, priority)
+            self.tier.p = min(self.nb_packets_capacity, self.tier.p + max(len(self.tier.b2) / len(self.tier.b1), 1))
+            self.replace(tstart_tlast, name, size, priority)
             self.tier.b1.remove(name)
             self.tier.t2.appendleft(name)
             # index update
@@ -136,7 +141,7 @@ class ARCPolicy(Policy):
         if self.tier.b2.__contains__(name):
             print(name.__str__() + " found in b2")
             self.tier.p = max(0, self.tier.p - max(len(self.tier.b1) / len(self.tier.b2), 1))
-            self.replace(timestamp, tstart_tlast, name, size, priority)
+            self.replace(tstart_tlast, name, size, priority)
             self.tier.b2.remove(name)
             self.tier.t2.appendleft(name)
             # index update
@@ -153,14 +158,14 @@ class ARCPolicy(Policy):
         # Case IV: x is not in (T1 u B1 u T2 u B2) WRITE IN T1
         #  A cache miss has occurred in ARC(c) and DBL(2c)
         print("Cache miss")
-        if len(self.tier.t1) + len(self.tier.b1) == 71:
+        if len(self.tier.t1) + len(self.tier.b1) == self.nb_packets_capacity:
             print("Case A: L1 (T1 u B1) has exactly c pages.")
             # Case A: L1 (T1 u B1) has exactly c pages.
-            if len(self.tier.t1) < 71:
+            if len(self.tier.t1) < self.nb_packets_capacity:
                 print("Delete LRU page in B1. REPLACE(x, p)")
                 # Delete LRU page in B1. REPLACE(x, p)
                 self.tier.b1.pop()
-                self.replace(timestamp, tstart_tlast, name, size, priority)
+                self.replace(tstart_tlast, name, size, priority)
             else:
                 print("Here B1 is empty. Delete LRU page in T1 (cache)")
                 # Here B1 is empty.
@@ -179,15 +184,15 @@ class ARCPolicy(Policy):
             print("Case B: L1 (T1 u B1) has less than c pages")
             total = len(self.tier.t1) + len(self.tier.b1) + len(self.tier.t2) + len(self.tier.b2)
             print("total = " + total.__str__())
-            if total >= 71:
+            if total >= self.nb_packets_capacity:
                 # Delete LRU page in B2, if |T1| + |T2| + |B1| + |B2| == 2c
-                print("total >= 71")
-                if total == (2 * 71):
+                print("total >= " + self.nb_packets_capacity.__str__())
+                if total == (2 * self.nb_packets_capacity):
                     print("Delete LRU page in B2, if |T1| + |T2| + |B1| + |B2| == 2c")
                     self.tier.b2.pop()
 
                 # REPLACE(x, p)
-                self.replace(timestamp, tstart_tlast, name, size, priority)
+                self.replace(tstart_tlast, name, size, priority)
 
         # Finally, fetch x to the cache and move it to MRU position in T1
         self.tier.t1.appendleft(name)
@@ -203,4 +208,3 @@ class ARCPolicy(Policy):
         if self.storage.index.tier_has_packet(self.tier, name):
             print(name.__str__() + " written in t1")
         return
-
