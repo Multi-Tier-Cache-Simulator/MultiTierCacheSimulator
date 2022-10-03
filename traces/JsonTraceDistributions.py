@@ -24,9 +24,9 @@ from fitter import Fitter
 # 	ContentType int        `json:"contentType,omitempty"` // Data ContentType
 # 	Freshness   int        `json:"freshness,omitempty"`   // Data FreshnessPeriod (ms)
 # 	FinalBlock  bool       `json:"finalBlock,omitempty"`  // Data is final block
-class TraceDistributions:
+class JsonTraceDistributions:
     def __init__(self):
-        distributions_folder = "C:/Users/lna11/Documents/multi_tier_cache_simulator/distributions/<timestamp>"
+        distributions_folder = "json-distributions/<timestamp>"
         self.distributions_folder = distributions_folder.replace('/', os.path.sep).replace("<timestamp>",
                                                                                            time.strftime(
                                                                                                "%a_%d_%b_%Y_%H-%M-%S",
@@ -99,11 +99,9 @@ class TraceDistributions:
             plot_x.append(round((key - first_key) / (last_key - first_key), 3))
             plot_y.append(value)
 
-        print(plot_x)
-        print(plot_y)
-        f = Fitter(plot_x)
-        f.fit()
-        f.summary()
+        # f = Fitter(plot_x)
+        # f.fit()
+        # f.summary()
         plt.figure()
         plt.plot(plot_x, plot_y)
         period = last_key - first_key
@@ -135,6 +133,8 @@ class TraceDistributions:
 
         # remove unused fields
         for element in lines:
+            if 'name' in element:
+                del element['name']
             if 'size3' in element:
                 del element['size3']
             if 'nackReason' in element:
@@ -156,14 +156,8 @@ class TraceDistributions:
             if 'finalBlock' in element:
                 del element['finalBlock']
 
-        # remove duplicates
-        seen = []
-        for line in lines:
-            if line not in seen:
-                seen.append(line)
-
-        dataLines = [line for line in seen if 'D' in line['t']]
-        interestLines = [line for line in seen if 'I' in line['t']]
+        dataLines = [line for line in lines if 'D' in line['t']]
+        interestLines = [line for line in lines if 'I' in line['t']]
         dataSizes = OrderedDict()
         interestSizes = OrderedDict()
         for line in dataLines:
