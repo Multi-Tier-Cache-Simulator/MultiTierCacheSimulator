@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-import numpy as np
+import pandas as pd
 import simpy
 from traces.ndn_trace import NDNTrace
 from simulation import Simulation
@@ -14,28 +14,34 @@ from policies.dram_lru_policy import DRAMLRUPolicy
 from policies.dram_lfu_policy import DRAMLFUPolicy
 from policies.dram_random_policy import DRAMRandPolicy
 import matplotlib.pyplot as plt
+from traces.trace_creator import TraceCreator
+from traces.jsonToCSV import JsonToCSVTrace
+
+# time is in s
+# size is in byte
 
 # verify if the version of python is >3
-from traces.trace_creator import TraceCreator
-
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
+slot_size = 9000
 # create the trace using zipf law
-traceCreator = TraceCreator("text.txt", 500, 1.2, 16777216)
+# traceCreator = TraceCreator(10000, 1.2)
+
+# ndn6 json
+# traceCreator = JsonToCSVTrace("C:/Users/lna11/Documents/multi_tier_cache_simulator/resources/ndn6dump.box1.json"
+#                               ".gz", trace_len_limit=200000)
 
 # turn the trace into packets
 trace = NDNTrace()
 trace.gen_data()
 
-remote_average_time_writing = 0
 remote_average_time_reading = 0
-
 for line in trace.data:
-    if line[0] == 'd':
-        remote_average_time_writing += int(line[5])
-    else:
-        remote_average_time_reading += int(line[5])
+    remote_average_time_reading += float(line[5])
+remote_average_time_reading = remote_average_time_reading / 10 ** 9
+
+nb_interests = len([line for line in trace.data if line[0] == 'i'])
 
 # log files
 output_folder = "logs/<timestamp>"
@@ -60,14 +66,18 @@ except:
 
 plot_x = []  # 2tiers storage config str
 plot_x1 = []  # 1tier storage config str
-plot_y = []  # policy + chr -> value
+plot_chr1 = []  # chr firt tier
+plot_chr2 = []  # chr second tier
 plot_yrl = []  # local average_reading_time
 plot_ywl = []  # local average_writing_time
 plot_yrr = []  # remote average_reponseTime_reading
-plot_ywr = []  # remote average_reponseTime_writing
+plot_used_size_tier_1 = []
+plot_used_size_tier_2 = []
+plot_number_of_packets = []
 
 dramTierPolicies = [ARCPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
 diskTierPolicies = [LRUPolicy, LFUPolicy, RandPolicy]
+
 # 2 tiers
 for dramPolicy in dramTierPolicies:
     for diskPolicy in diskTierPolicies:
@@ -81,13 +91,15 @@ for dramPolicy in dramTierPolicies:
         # create the index
         index = Index()
         # Create the storage tiers
-        dram = Tier(name="DRAM", max_size=1 * 10 ** 9, granularity=1, latency=100e-6, throughput=1.25e10,
-                    target_occupation=0.6)
-        nvme = Tier(name="NVMe", max_size=1 * 10 ** 9, granularity=512, latency=1e-4, throughput=2e9,
-                    target_occupation=0.9)
+        # dram : max_size=100 kilobytes, latency= 100ns, read_throughput= 40gbps write_throughput = 20gbps
+        dram = Tier(name="DRAM", max_size=100000, granularity=1, latency=100e-7, read_throughput=5e9,
+                    write_throughput=2.5e9, target_occupation=0.6)
+        # nvme : max_size=1000 kilobytes, latency= 10000ns, read_throughput = 3gb/s write_throughput = 1gb/s
+        nvme = Tier(name="NVMe", max_size=1000000, granularity=512, latency=100e-6, read_throughput=3.75e8,
+                    write_throughput=1.25e8, target_occupation=1.0)
         # The storage manager is a utility object giving info on the tier ordering & default tier
         tiers = [dram, nvme]
-        storage = StorageManager(index, tiers, env)
+        storage = StorageManager(index, tiers, env, slot_size)
         dramPolicy(dram, storage, env)
         diskPolicy(nvme, storage, env)
 
@@ -107,24 +119,32 @@ for dramPolicy in dramTierPolicies:
         except:
             print(f'Error trying to write into a new file in output folder "{output_folder}"')
         plot_x.append(name)
-        cache_hit_ratio = 0.0
         local_average_time_reading = 0.0
         local_average_time_writing = 0.0
         total_number_read = 0.0
         total_number_write = 0.0
+        nb_packets = 0
         for onetier in tiers:
-            cache_hit_ratio += onetier.chr
+            nb_packets += onetier.number_of_packets
             total_number_read += onetier.number_of_reads
             total_number_write += onetier.number_of_write
             local_average_time_reading += onetier.time_spent_reading
             local_average_time_writing += onetier.time_spent_writing
-        plot_y.append(0.0) if traceCreator.nb_interests == 0 else plot_y.append(
-            round(cache_hit_ratio / traceCreator.nb_interests, 3))
-        # plot_y.append(round(cache_hit_ratio / 360, 3))
-        plot_yrl.append(round(local_average_time_reading / total_number_read, 3))
-        plot_yrr.append(round(remote_average_time_reading / total_number_read, 3))
-        plot_ywl.append(round(local_average_time_writing / total_number_write, 3))
-        plot_ywr.append(round(remote_average_time_writing / total_number_write, 3))
+        # number of packets plot
+        plot_number_of_packets.append(nb_packets)
+        # reading plot
+        plot_yrl.append(0.0) if total_number_read == 0 else plot_yrl.append(dram.time_spent_reading / total_number_read)
+        plot_yrr.append(0.0) if total_number_read == 0 else plot_yrr.append(
+            remote_average_time_reading / total_number_read)
+        # writing plot
+        plot_ywl.append(0.0) if dram.number_of_write == 0 else plot_ywl.append(
+            dram.time_spent_writing / total_number_write)
+        # used size plots
+        plot_used_size_tier_1.append(dram.used_size)
+        plot_used_size_tier_2.append(nvme.used_size)
+        # chr plots
+        plot_chr1.append(0.0) if nb_interests == 0 else plot_chr1.append(dram.chr / nb_interests)
+        plot_chr2.append(0.0) if nb_interests == 0 else plot_chr2.append(nvme.chr / nb_interests)
 
 # 1 tier
 for dramPolicy in dramTierPolicies:
@@ -138,12 +158,13 @@ for dramPolicy in dramTierPolicies:
     # create the index
     index = Index()
     # Create the storage tiers
-    dram = Tier(name="DRAM", max_size=1 * 10 ** 9, granularity=1, latency=100e-6, throughput=1.25e10,
-                target_occupation=0.6)
+    # dram : max_size=200 kilobytes, latency= 100ns, read_throughput= 40gbps write_throughput = 20gbps
+    dram = Tier(name="DRAM", max_size=200000, granularity=1, latency=100e-7, read_throughput=5e9,
+                write_throughput=2.5e9, target_occupation=0.6)
     # The storage manager is a utility object giving info on the tier ordering & default tier
     tiers = [dram]
 
-    storage = StorageManager(index, tiers, env)
+    storage = StorageManager(index, tiers, env, slot_size)
 
     dramPolicy(dram, storage, env)
     latest_filename = "latest" + name + ".log"
@@ -163,59 +184,94 @@ for dramPolicy in dramTierPolicies:
     except:
         print(f'Error trying to write into a new file in output folder "{output_folder}"')
     plot_x.append(name)
-    plot_y.append(0.0) if traceCreator.nb_interests == 0 else plot_y.append(
-        round(dram.chr / traceCreator.nb_interests, 3))
-    # plot_y.append(round(dram.chr / 360, 3))
+    # number of packets plot
+    plot_number_of_packets.append(dram.number_of_packets)
+    # reading plot
     plot_yrl.append(0.0) if dram.number_of_reads == 0 else plot_yrl.append(
-        round(dram.time_spent_reading / dram.number_of_reads, 3))
+        dram.time_spent_reading / dram.number_of_reads)
     plot_yrr.append(0.0) if dram.number_of_reads == 0 else plot_yrr.append(
-        round(remote_average_time_reading / dram.number_of_reads, 3))
+        remote_average_time_reading / dram.number_of_reads)
+    # writing plot
     plot_ywl.append(0.0) if dram.number_of_write == 0 else plot_ywl.append(
-        round(dram.time_spent_writing / dram.number_of_write, 3))
-    plot_ywr.append(0.0) if dram.number_of_write == 0 else plot_ywr.append(
-        round(remote_average_time_writing / dram.number_of_write, 3))
+        dram.time_spent_writing / dram.number_of_write)
+    # used size plots
+    plot_used_size_tier_1.append(dram.used_size)
+    plot_used_size_tier_2.append(0.0)
+    # chr plots
+    plot_chr1.append(0.0) if nb_interests == 0 else plot_chr1.append(dram.chr / nb_interests)
+    plot_chr2.append(0.0)
 
-plt.figure(figsize=(20, 4))
-plt.bar(plot_x, plot_y)
-plt.suptitle('Cache Hit Ratio Plotting, Disk policy is with priority')
-for a, b in zip(plot_x, plot_y):
-    plt.text(a, b, str(b))
+# chr
+df = pd.DataFrame(data={'DRAM': plot_chr1, 'DISK': plot_chr2})
+df.index = plot_x
+ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Storage configuration',
+             ylabel='Cache Hit Ration')
+
+for c in ax.containers:
+    labels = [round(v.get_height(), 3) if v.get_height() > 0 else '' for v in c]
+    ax.bar_label(c, labels=labels, label_type='center')
+
 try:
     plt.savefig(os.path.join(figure_folder, "chr.png"))
 except:
     print(f'Error trying to write into a new file in output folder "{figure_folder}"')
 
-N = len(dramTierPolicies) * len(diskTierPolicies) + len(diskTierPolicies) + 1
-ind = np.arange(N)
-width = 0.25
+# Reading Time
+df = pd.DataFrame(data={'plot_x': plot_x, 'Local Time': plot_yrl, 'Remote Time': plot_yrr})
+df = df[['plot_x', 'Local Time', 'Remote Time']]
+df.set_index(['plot_x'], inplace=True)
 
-plt.figure(figsize=(20, 10))
-plt.bar(ind, plot_yrl, color='b', width=width, edgecolor='black', label='Local Time Reading')
-plt.bar(ind + width, plot_yrr, color='g', width=width, edgecolor='black', label='Remote Time Reading')
-
-plt.xlabel("Policy")
-plt.ylabel("Time")
-plt.title("Response Time Reading vs Time Reading")
-
-plt.xticks(ind + width / 2, plot_x)
-plt.legend()
+ax = df.plot(kind='bar', figsize=(17, 6), rot=0, xlabel='Storage configuration',
+             ylabel='Time (s)')
+for c in ax.containers:
+    labels = [round(v.get_height(), 3) if v.get_height() > 0 else '' for v in c]
+    ax.bar_label(c, labels=labels, label_type='center')
 
 try:
     plt.savefig(os.path.join(figure_folder, "reading_time.png"))
 except:
     print(f'Error trying to write into a new file in output folder "{figure_folder}"')
 
-plt.figure(figsize=(20, 10))
-plt.bar(ind, plot_ywl, color='b', width=width, edgecolor='black', label='Local Time Writing')
-plt.bar(ind + width, plot_ywr, color='g', width=width, edgecolor='black', label='Remote Time Writing')
+# Writing Time
+df = pd.DataFrame(data={'Writing Time': plot_ywl})
+df.index = plot_x
 
-plt.xlabel("Policy")
-plt.ylabel("Time")
-plt.title("Response Time Writing vs Time Writing")
+ax = df.plot(kind='bar', figsize=(17, 6), rot=0, xlabel='Storage configuration',
+             ylabel='Time (s)')
+for c in ax.containers:
+    labels = [round(v.get_height() * 10 ** 5, 3) if v.get_height() > 0 else '' for v in c]
+    ax.bar_label(c, labels=labels, label_type='center')
 
-plt.xticks(ind + width / 2, plot_x)
-plt.legend()
 try:
     plt.savefig(os.path.join(figure_folder, "writing_time.png"))
+except:
+    print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+
+# Used size per tier
+df = pd.DataFrame(data={'DRAM': plot_used_size_tier_1, 'DISK': plot_used_size_tier_2})
+df.index = plot_x
+
+ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Storage configuration', ylabel='Used Size')
+for c in ax.containers:
+    labels = [v.get_height() if v.get_height() > 0 else '' for v in c]
+    ax.bar_label(c, labels=labels, label_type='center')
+
+try:
+    plt.savefig(os.path.join(figure_folder, "used_size.png"))
+except:
+    print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+
+# Number of packets
+df = pd.DataFrame(data={'Number of Packets': plot_number_of_packets})
+df.index = plot_x
+
+ax = df.plot(kind='bar', figsize=(17, 6), rot=0, xlabel='Storage configuration',
+             ylabel='Number of packets')
+for c in ax.containers:
+    labels = [round(v.get_height(), 3) if v.get_height() > 0 else '' for v in c]
+    ax.bar_label(c, labels=labels, label_type='center')
+
+try:
+    plt.savefig(os.path.join(figure_folder, "number_of_packets.png"))
 except:
     print(f'Error trying to write into a new file in output folder "{figure_folder}"')
