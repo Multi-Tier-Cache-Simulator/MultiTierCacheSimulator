@@ -95,6 +95,7 @@ class JsonToCSVTrace:
                     writer.writerow(traceline)
                 if line['t'] == '>I' and responseTimes.get(line['name']):
                     traceline = ['i', line['ts'], line['name'], line['size2'], 'h', responseTimes.get(line['name'])]
+
                     # write the data
                     writer.writerow(traceline)
                     self.nb_interests += 1
