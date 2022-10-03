@@ -6,7 +6,7 @@ import json
 
 #   DirType   string `json:"t"`     // packet direction and type
 # 	Timestamp int64  `json:"ts"`    // Unix epoch nanoseconds
-# 	Flow      []byte `json:"flow"`  // flow key
+# 	Flow      []byte `json:"flow"`  // flow key defines the interface
 # 	Size2     int    `json:"size2"` // packet size at NDNLPv2 layer
 # 	Size3       int        `json:"size3,omitempty"`       // packet size at L3
 # 	NackReason  int        `json:"nackReason,omitempty"`  // Nack reason
@@ -22,11 +22,11 @@ import json
 
 
 class JsonToCSVTrace:
-    def __init__(self, fileName: str):
+    def __init__(self, fileName: str, trace_len_limit=-1):
         self.nb_interests = 0
-        self.gen_trace(fileName)
+        self.gen_trace(fileName, trace_len_limit)
 
-    def gen_trace(self, fileName: str):
+    def gen_trace(self, fileName: str, trace_len_limit=-1):
         # 'packetType', 'timestamp', 'name', 'size', 'priority', 'responseTime'
         # gather the catalog of items from the trace
         lines = []
@@ -36,7 +36,8 @@ class JsonToCSVTrace:
 
         # Use only lines that have packetType, timestamp, size and name
         linesForSimu = [line for line in lines if 't' in line and 'ts' in line and 'size2' in line and 'name' in line]
-
+        if trace_len_limit != -1:
+            linesForSimu = linesForSimu[0:trace_len_limit]
         # Remove unused fields
         for line in linesForSimu:
             if 'size3' in line:
@@ -60,30 +61,41 @@ class JsonToCSVTrace:
 
         # calculate the Response Times
         responseTimes = {}
-        linesWithDataPackets = [line for line in linesForSimu if line['t'] == '>D']
 
-        for line in linesWithDataPackets:
-            if line['name'] in responseTimes.keys():
-                continue
-            s = list(filter(lambda x: (x['t'] == '<I' and x["flow"] == line['flow']) and (
-                        (line['name'] == x['name']) or ('cbp' in x and x['name'] in line['name'])),
-                            linesForSimu[linesForSimu.index(line)::-1]))
-            if s:
-                responseTimes.update({k['name']: (line["ts"] - s[0]["ts"]) * 10**(-6) for k in s})
-
-        print(linesForSimu.__sizeof__())
         linesWithIncomingTraffic = [line for line in linesForSimu if line['t'] == '>D' or line['t'] == '>I']
-        print(linesWithIncomingTraffic.__len__())
+        linesWithIncomingData = [line for line in linesForSimu if line['t'] == '>D']
+
+        # list containing only prefixes
+        namesPrefixe = {}
+        prefixes = [line['name'] for line in linesWithIncomingTraffic if 'cbp' in line]
+        for line in linesWithIncomingData:
+            for prefix in prefixes:
+                if line['name'] == prefix or prefix in line['name']:
+                    namesPrefixe[line['name']] = prefix
+                    break
+            if line['name'] not in namesPrefixe:
+                namesPrefixe[line['name']] = line['name']
+
+        for line in linesForSimu:
+            if line['t'] == '>D':
+                if line['name'] in responseTimes.keys():
+                    continue
+                s = list(filter(lambda x: (x['t'] == '<I' and x["flow"] == line['flow']) and (
+                            (line['name'] == x['name']) or ('cbp' in x and x['name'] in line['name'])),
+                                linesForSimu[linesForSimu.index(line)::-1]))
+                if s:
+                    responseTimes.update({k['name']: line['ts'] - s[0]['ts'] for k in s})
+
         with open('resources/dataset_ndn/ndn6trace.csv', 'w', newline='') as f:
             writer = csv.writer(f)
             for line in linesWithIncomingTraffic:
-                if line['t'] == '>D':
-                    traceline = ['d', line['ts'], line['name'], line['size2'], 'h', responseTimes.get(line['name'])]
-                    # write the datas
+                if line['t'] == '>D' and responseTimes.get(line['name']):
+                    traceline = ['d', line['ts'], namesPrefixe.get(line['name']), line['size2'], 'h', responseTimes.get(line['name'])]
+                    # write the data
                     writer.writerow(traceline)
-                if line['t'] == '>I':
+                if line['t'] == '>I' and responseTimes.get(line['name']):
                     traceline = ['i', line['ts'], line['name'], line['size2'], 'h', responseTimes.get(line['name'])]
-                    # write the datas
+                    # write the data
                     writer.writerow(traceline)
                     self.nb_interests += 1
 
