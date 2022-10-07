@@ -71,10 +71,9 @@ class CSVTraceDistributions:
         # number of data packet and number of interest packet
 
     def size_distribution(self, fileName: str, trace_len_limit=-1):
-        plot_interestSizes = []
+        # size
         plot_dataSizes = []
         plot_numberOfDataPackets = []
-        plot_numberOfInterestPackets = []
 
         with open(fileName, encoding='utf8') as read_obj:
             csv_reader = csv.reader(read_obj, delimiter=',')
@@ -84,54 +83,33 @@ class CSVTraceDistributions:
             lines = lines[0:trace_len_limit]
 
         dataLines = [line for line in lines if 'd' in line[0]]
-        interestLines = [line for line in lines if 'i' in line[0]]
         dataSizes = OrderedDict()
-        interestSizes = OrderedDict()
+        min_size = int(dataLines[0][3])
+        max_size = int(dataLines[0][3])
         for line in dataLines:
+            if max_size < int(line[3]):
+                max_size = int(line[3])
+            if min_size > int(line[3]):
+                min_size = int(line[3])
             if int(line[3]) in dataSizes.keys():
                 dataSizes[int(line[3])] = dataSizes[int(line[3])] + 1
             else:
                 dataSizes[int(line[3])] = 1
 
-        for line in interestLines:
-            if int(line[3]) in interestSizes.keys():
-                interestSizes[int(line[3])] = interestSizes[int(line[3])] + 1
-            else:
-                interestSizes[int(line[3])] = 1
-
         for key, value in dataSizes.items():
             plot_dataSizes.append(key)
             plot_numberOfDataPackets.append(value)
 
-        for key, value in interestSizes.items():
-            plot_interestSizes.append(key)
-            plot_numberOfInterestPackets.append(value)
-
         data_first_key = int(next(iter(dataLines))[1])
         data_last_key = int(next(reversed(dataLines))[1])
         data_period = round((data_last_key - data_first_key) / 6e10, 0)
-        interest_first_key = int(next(iter(interestLines))[1])
-        interest_last_key = int(next(reversed(interestLines))[1])
-        interest_period = round((interest_last_key - interest_first_key) / 6e10, 0)
-        fig, axs = plt.subplots(2)
-        axs[0].bar(plot_interestSizes, plot_numberOfInterestPackets)
-        axs[0].set_title('Number Of Interest Packets per size for ' + data_period.__str__() + ' minutes')
-        axs[1].bar(plot_dataSizes, plot_numberOfDataPackets, color='tab:orange')
-        axs[1].set_title('Number Of Data Packets per size for ' + interest_period.__str__() + ' minutes')
-        fig.tight_layout()
+        plt.figure()
+        plt.bar(plot_numberOfDataPackets, plot_dataSizes)
+        plt.title('Number Of Data Packets per size for ' + data_period.__str__() + ' minutes')
+        plt.xlabel("Size (o)")
+        plt.ylabel("Number of packets")
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_packets_per_size.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
-
-        # percentage of data and interest packets
-        df = pd.DataFrame(data={'Number_Of_Interest_Packets_per_size': plot_interestSizes},
-                          index=plot_numberOfInterestPackets)
-
-        df.plot.pie(y='Number_Of_Interest_Packets_per_size', figsize=(5, 5))
-
-        try:
-            plt.savefig(os.path.join(self.distributions_folder, "number_of_interest_packets_per_size.png"))
         except:
             print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
 
@@ -145,6 +123,8 @@ class CSVTraceDistributions:
         except:
 
             print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        print("max_size = " + max_size.__str__())
+        print("min size = " + min_size.__str__())
 
     def event_distribution(self, fileName: str, trace_len_limit=-1):
         print(fileName)
@@ -159,23 +139,42 @@ class CSVTraceDistributions:
         diff = 0
         min_period = 0
         max_period = 0
+        min_reponse_time = 0
+        max_reponse_time = 0
+        averageReponseTime = 0
+
         for line in lines:
             if xi_1 == 0:
                 min_period = int(line[1])
+                min_reponse_time = int(line[5])
                 xi_1 = int(line[1])
             else:
                 diff += int(line[1]) - xi_1
+                averageReponseTime += int(line[5])
+
                 if max_period < int(line[1]) - xi_1:
                     max_period = int(line[1]) - xi_1
                 if min_period > int(line[1]) - xi_1:
                     min_period = int(line[1]) - xi_1
+
+                if max_reponse_time < int(line[5]):
+                    max_reponse_time = int(line[5])
+                if min_reponse_time > int(line[5]):
+                    min_reponse_time = int(line[5])
+
                 xi_1 = int(line[1])
 
-        moy = diff / trace_len_limit
+        # timestamp
+        moy = diff / len(lines)
         print("average time of event occurrence = " + moy.__str__())
         print("minimum time before event occurrence = " + min_period.__str__())
         print("maximum time before event occurrence = " + max_period.__str__())
-
+        # names
         names = [line[2] for line in lines]
         names = list(set(names))
         print("number of content = " + len(names).__str__())
+        # response Time
+        art = averageReponseTime / len(lines)
+        print("average response time = " + art.__str__())
+        print("minimum response time = " + min_reponse_time.__str__())
+        print("maximum response time = " + max_reponse_time.__str__())

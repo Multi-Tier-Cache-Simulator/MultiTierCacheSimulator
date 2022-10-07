@@ -15,7 +15,6 @@ from policies.dram_lfu_policy import DRAMLFUPolicy
 from policies.dram_random_policy import DRAMRandPolicy
 import matplotlib.pyplot as plt
 from traces.trace_creator import TraceCreator
-from traces.jsonToCSV import JsonToCSVTrace
 
 # time is in s
 # size is in byte
@@ -26,15 +25,11 @@ if sys.version_info[0] < 3:
 
 slot_size = 9000
 # create the trace using zipf law
-# traceCreator = TraceCreator(10000, 1.2)
-
-# ndn6 json
-# traceCreator = JsonToCSVTrace("C:/Users/lna11/Documents/multi_tier_cache_simulator/resources/ndn6dump.box1.json"
-#                               ".gz", trace_len_limit=200000)
+# traceCreator = TraceCreator(N=34646, alpha=1.2, traffic_period=1460)
 
 # turn the trace into packets
 trace = NDNTrace()
-trace.gen_data()
+trace.gen_data(trace_len_limit=20000)
 
 remote_average_time_reading = 0
 for line in trace.data:
@@ -74,6 +69,8 @@ plot_yrr = []  # remote average_reponseTime_reading
 plot_used_size_tier_1 = []
 plot_used_size_tier_2 = []
 plot_number_of_packets = []
+plot_waisted_size_1 = []
+plot_waisted_size_2 = []
 
 dramTierPolicies = [ARCPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
 diskTierPolicies = [LRUPolicy, LFUPolicy, RandPolicy]
@@ -145,6 +142,9 @@ for dramPolicy in dramTierPolicies:
         # chr plots
         plot_chr1.append(0.0) if nb_interests == 0 else plot_chr1.append(dram.chr / nb_interests)
         plot_chr2.append(0.0) if nb_interests == 0 else plot_chr2.append(nvme.chr / nb_interests)
+        # waisted size
+        plot_waisted_size_1.append(dram.number_of_packets * slot_size - dram.used_size)
+        plot_waisted_size_2.append(nvme.number_of_packets * slot_size - nvme.used_size)
 
 # 1 tier
 for dramPolicy in dramTierPolicies:
@@ -200,6 +200,9 @@ for dramPolicy in dramTierPolicies:
     # chr plots
     plot_chr1.append(0.0) if nb_interests == 0 else plot_chr1.append(dram.chr / nb_interests)
     plot_chr2.append(0.0)
+    # waisted size
+    plot_waisted_size_1.append(dram.number_of_packets * slot_size - dram.used_size)
+    plot_waisted_size_2.append(0.0)
 
 # chr
 df = pd.DataFrame(data={'DRAM': plot_chr1, 'DISK': plot_chr2})
@@ -273,5 +276,20 @@ for c in ax.containers:
 
 try:
     plt.savefig(os.path.join(figure_folder, "number_of_packets.png"))
+except:
+    print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+
+# waisted size
+df = pd.DataFrame(data={'DRAM': plot_waisted_size_1, 'DISK': plot_waisted_size_2})
+df.index = plot_x
+ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Storage configuration',
+             ylabel='Waisted size')
+
+for c in ax.containers:
+    labels = [round(v.get_height(), 3) if v.get_height() > 0 else '' for v in c]
+    ax.bar_label(c, labels=labels, label_type='center')
+
+try:
+    plt.savefig(os.path.join(figure_folder, "waisted_size.png"))
 except:
     print(f'Error trying to write into a new file in output folder "{figure_folder}"')

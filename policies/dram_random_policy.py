@@ -27,7 +27,7 @@ class DRAMRandPolicy(Policy):
             p2 = 0.2
             if len(self.tier.random_struct) >= self.nb_packets_capacity:
                 old = self.tier.random_struct.pop(random.choice(list(self.tier.random_struct.keys())))
-                print(old.__str__() + " evicted from " + self.tier.name.__str__())
+                print(old.name + " evicted from " + self.tier.name)
                 # evict data
                 self.tier.number_of_eviction_from_this_tier += 1
                 self.tier.number_of_packets -= 1

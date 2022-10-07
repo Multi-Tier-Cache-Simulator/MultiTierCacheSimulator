@@ -35,13 +35,13 @@ class JsonToCSVTrace:
             lines.append(json.loads(line))
 
         # Use only lines that have packetType, timestamp, size and name
-        linesForSimu = [line for line in lines if 't' in line and 'ts' in line and 'size2' in line and 'name' in line]
+        linesForSimu = [line for line in lines if 't' in line and 'ts' in line and 'size3' in line and 'name' in line]
         if trace_len_limit != -1:
             linesForSimu = linesForSimu[0:trace_len_limit]
         # Remove unused fields
         for line in linesForSimu:
-            if 'size3' in line:
-                del line['size3']
+            if 'size2' in line:
+                del line['size2']
             if 'nackReason' in line:
                 del line['nackReason']
             if 'mbf' in line:
@@ -90,11 +90,11 @@ class JsonToCSVTrace:
             writer = csv.writer(f)
             for line in linesWithIncomingTraffic:
                 if line['t'] == '>D' and responseTimes.get(line['name']):
-                    traceline = ['d', line['ts'], namesPrefixe.get(line['name']), line['size2'], 'h', responseTimes.get(line['name'])]
+                    traceline = ['d', line['ts'], namesPrefixe.get(line['name']), line['size3'], 'h', responseTimes.get(line['name'])]
                     # write the data
                     writer.writerow(traceline)
                 if line['t'] == '>I' and responseTimes.get(line['name']):
-                    traceline = ['i', line['ts'], line['name'], line['size2'], 'h', responseTimes.get(line['name'])]
+                    traceline = ['i', line['ts'], line['name'], line['size3'], 'h', responseTimes.get(line['name'])]
 
                     # write the data
                     writer.writerow(traceline)

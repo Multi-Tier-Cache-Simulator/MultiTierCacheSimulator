@@ -12,10 +12,11 @@ import time
 class TraceCreator:
     # N: catalogue size
     # alpha: Zipf Law
-    def __init__(self, N: int, alpha: float):
-        self.gen_trace(N, alpha)
+    # traffic_period: in minutes
+    def __init__(self, N: int, alpha: float, traffic_period: int):
+        self.gen_trace(N, alpha, traffic_period)
 
-    def gen_trace(self, N: int, alpha: float):
+    def gen_trace(self, N: int, alpha: float, traffic_period: int):
         # generate a catalog of items
         words = []
         random_words = RandomWords()
@@ -35,20 +36,19 @@ class TraceCreator:
         t = int(round(time.time_ns(), 0))
         lines_in_cs = []
         words_in_cs = []
-        with open('resources/dataset_ndn/trace.csv', 'w', encoding="utf-8",
+        with open('resources/dataset_ndn/synthetic-trace.csv', 'w', encoding="utf-8",
                   newline='') as f:
             writer = csv.writer(f)
             # run for 1min and 30s
-            end = time.time() + 1
-            i = 0
-            while i < 33217:
+            end = t + traffic_period * 60000000000
+            while t < end:
                 # create requests on the words following a zipf's law
                 index = np.random.zipf(alpha)
                 while index >= len(unique_words):
                     index = np.random.zipf(alpha)
                 # in ms turn to nanosecond
                 responseTime = int(round(random.randrange(1000000, 10000000), 0))
-                size = int(round(np.random.uniform(100, 9000), 0))
+                datasize = int(round(np.random.uniform(100, 8000), 0))
                 # if unique_words[index] in node_words:
                 if unique_words[index] in words_in_cs:
                     # 50% retransmission interest packet 50% retransmission data packet
@@ -69,13 +69,12 @@ class TraceCreator:
                     p1 = 0.5
                     x = np.random.uniform(low=0.0, high=1.0, size=None)
                     if x < p1:
-                        l = ["d", t, unique_words[index], size, "h", responseTime]
+                        l = ["d", t, unique_words[index], datasize, "h", responseTime]
                     else:
-                        l = ["d", t, unique_words[index], size, "l", responseTime]
+                        l = ["d", t, unique_words[index], datasize, "l", responseTime]
                 # write the data
                 writer.writerow(l)
-                i += 1
                 # add nanoseconds
-                t += int(round(random.randrange(489, 1000000000), 0))
+                t += int(round(random.uniform(489, 1000000000), 0))
                 lines_in_cs.append(l)
                 words_in_cs.append(unique_words[index])

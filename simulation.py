@@ -37,6 +37,7 @@ class Simulation:
             output += (f'Tier "{tier.name}":'
                        f'{s}Total size {math.trunc(tier.max_size * tier.target_occupation)} o '
                        f'{s}Used size {tier.used_size} o '
+                       f'{s}Waisted size {tier.number_of_packets * self._storage.slot_size - tier.used_size} o '
                        f'{s2}{tier.number_of_prefetching_to_this_tier} prefetching to this tier'
                        f'{s2}{tier.number_of_prefetching_from_this_tier} prefetching from this tier'
                        f'{s2}{tier.number_of_eviction_to_this_tier} eviction to this tier'

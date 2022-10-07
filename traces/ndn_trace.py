@@ -33,6 +33,7 @@ class NDNTrace(Trace):
                 print("ndn-trace, data already in cache")
                 return
             # write data to default-tier
+            print("size = " + size.__str__())
             tier = storage.get_default_tier()
             tier.write_packet(tstart_tlast, packet)
         # if interest packet
@@ -44,6 +45,7 @@ class NDNTrace(Trace):
                 print("cache miss")
                 storage.get_default_tier().cmr += 1
                 storage.get_default_tier().time_spent_reading += responseTime / 10 ** 9
+
             # if data not in default tier --> migrate data to default tier
             # read the packet
             else:

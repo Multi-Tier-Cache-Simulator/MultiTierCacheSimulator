@@ -11,6 +11,9 @@ class Packet:
         self.size = size
         self.priority = priority
 
+    def __str__(self):
+        print(self.packetType.__str__() + ", " + self.name.__str__() + ", " + self.size.__str__() + ", ")
+
 
 class Deque(object):
     'Fast searchable queue for default-tier'
@@ -23,8 +26,16 @@ class Deque(object):
             del self.od[key]
         self.od[key] = value
 
+    def __str__(self):
+        for key, value in self.od.items():
+            print(value.size.__str__() + ", ", end="")
+        print(" ")
+
     def pop(self):
         return self.od.popitem(0)[1]
+
+    def __get__(self, k):
+        return self.od[k]
 
     def remove(self, k):
         del self.od[k]
@@ -127,6 +138,7 @@ class Tier:
 
 
 class Index:
+    # add the time of writing to the index as well ?
     def __init__(self):
         self.index = dict()  # key: packet_name, value: tier
 

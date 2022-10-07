@@ -89,13 +89,14 @@ class ARCPolicy(Policy):
         #   Move x to MRU position in T2.
         if not isWrite and self.tier.t1.__contains__(packet.name):
             print("cache hit in t1, move from t1 of t2")
+            datapacket = self.tier.t1.__get__(packet.name)
             self.tier.t1.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, packet)
+            self.tier.t2.appendleft(packet.name, datapacket)
             # chr
             self.tier.chr += 1
             # time
-            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
-            self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
+            self.tier.time_spent_reading += self.tier.latency + datapacket.size / self.tier.read_throughput
             # read a data
             self.tier.number_of_reads += 1
             self.tier.number_of_write += 1
@@ -103,13 +104,14 @@ class ARCPolicy(Policy):
 
         if not isWrite and self.tier.t2.__contains__(packet.name):
             print("cache hit in t2, move from LRU to MRU of t2")
+            datapacket = self.tier.t2.__get__(packet.name)
             self.tier.t2.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, packet)
+            self.tier.t2.appendleft(packet.name, datapacket)
             # chr
             self.tier.chr += 1
             # time
-            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
-            self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
+            self.tier.time_spent_reading += self.tier.latency + datapacket.size / self.tier.read_throughput
             # read a data
             self.tier.number_of_reads += 1
             self.tier.number_of_write += 1
@@ -124,17 +126,18 @@ class ARCPolicy(Policy):
         if self.tier.b1.__contains__(packet.name):
             print("found in b1, move from b1 to t2")
             self.tier.p = min(self.nb_packets_capacity, self.tier.p + max(len(self.tier.b2) / len(self.tier.b1), 1))
-            self.replace(tstart_tlast, packet)
+            datapacket = self.tier.b1.__get__(packet.name)
+            self.replace(tstart_tlast, datapacket)
             self.tier.b1.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, packet)
+            self.tier.t2.appendleft(packet.name, datapacket)
             # index update
             self.storage.index.update_packet_tier(packet.name, self.tier)
             # time
-            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
             # write data
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-            self.tier.used_size += packet.size
+            self.tier.used_size += datapacket.size
             print("index length after = " + len(self.storage.index.index).__str__())
             return
 
@@ -147,17 +150,19 @@ class ARCPolicy(Policy):
         if self.tier.b2.__contains__(packet.name):
             print("found in b2, move from b2 to t2")
             self.tier.p = max(0, self.tier.p - max(len(self.tier.b1) / len(self.tier.b2), 1))
-            self.replace(tstart_tlast, packet)
+            datapacket = self.tier.b2.__get__(packet.name)
+            self.replace(tstart_tlast, datapacket)
+
             self.tier.b2.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, packet)
+            self.tier.t2.appendleft(packet.name, datapacket)
             # index update
             self.storage.index.update_packet_tier(packet.name, self.tier)
             # time
-            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
             # write data
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-            self.tier.used_size += packet.size
+            self.tier.used_size += datapacket.size
             print("index length after = " + len(self.storage.index.index).__str__())
             return
 
@@ -179,7 +184,7 @@ class ARCPolicy(Policy):
                 # evict data
                 self.tier.number_of_eviction_from_this_tier += 1
                 self.tier.number_of_packets -= 1
-                self.tier.used_size -= packet.size
+                self.tier.used_size -= old.size
                 # index update
                 self.storage.index.del_packet(old.name)
                 print("index length after = " + len(self.storage.index.index).__str__())
