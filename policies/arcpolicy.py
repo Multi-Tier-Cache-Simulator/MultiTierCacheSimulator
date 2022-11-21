@@ -1,6 +1,5 @@
 import math
 from decimal import Decimal
-
 from policies.policy import Policy
 from forwarder_structures import Forwarder, Tier, Packet
 from simpy.core import Environment

@@ -14,7 +14,6 @@ from policies.dram_lfu_cache import DRAMLFUPolicy
 from policies.lru_policy import LRUPolicy
 from policies.random_policy import RandPolicy
 from policies.lfu_policy import LFUPolicy
-# from traces.trace_creator import TraceCreator
 
 # time is in nanos
 # size is in byte

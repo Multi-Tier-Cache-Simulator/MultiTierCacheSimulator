@@ -63,8 +63,6 @@ class DRAMRandPolicy(Policy):
             self.tier.used_size += packet.size
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-
-            # print("index length after = " + len(self.forwarder.index.index).__str__())
         else:
             yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
             # time

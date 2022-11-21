@@ -33,7 +33,6 @@ class DRAMLRUPolicy(Policy):
                 # index update
                 self.forwarder.index.del_packet(old.name)
 
-                # print("index length after = " + len(self.forwarder.index.index).__str__())
                 # store the removed packet from dram in disk ?
                 try:
                     target_tier_id = self.forwarder.tiers.index(self.tier) + 1

@@ -15,6 +15,7 @@ for i in range(11):
                                 InterestLifetime=1000000,
                                 traffic_period=2880)
 
+
 # jsonToCSV = JsonToCSVTrace("resources/ndn6dump.box1.json.gz", trace_len_limit=200000)
 
 # csvTraceD = CSVTraceDistributions("ndn6trace")

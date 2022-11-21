@@ -1,5 +1,4 @@
 import math
-
 from simpy.core import Environment
 from traces.trace import Trace
 from forwarder_structures import Forwarder

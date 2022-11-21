@@ -45,7 +45,6 @@ class LRUPolicy(Policy):
 
                 # index update
                 self.forwarder.index.del_packet(old.name)
-                # print("index length after = " + len(self.forwarder.index.index).__str__())
 
             print("writing " + lis[2].name + " to " + self.tier.name.__str__())
             yield env.timeout(lis[2].size / self.tier.write_throughput)

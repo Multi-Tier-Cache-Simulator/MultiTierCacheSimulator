@@ -68,8 +68,6 @@ class RandPolicy(Policy):
             self.tier.used_size += packet.size
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-
-            # print("index length after = " + len(self.forwarder.index.index).__str__())
         else:
             print("reading " + lis[2].name + " to " + self.tier.name.__str__())
             yield env.timeout(lis[2].size / self.tier.read_throughput)

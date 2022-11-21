@@ -30,8 +30,8 @@ class NDNTrace(Trace):
         interest_life_time = int(interest_life_time)
         response_time = int(response_time)
         packet = Packet(data_back, timestamp, name, size, priority)
-        if priority == 'h':
-            return
+        # if priority == 'h':
+        #     return
         # delete expired pit entries
         forwarder.pit.update_pit_times(env)
 
