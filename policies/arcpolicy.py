@@ -1,20 +1,20 @@
 import math
-import numpy
+from decimal import Decimal
+
 from policies.policy import Policy
-from storage_structures import StorageManager, Tier, Packet
+from forwarder_structures import Forwarder, Tier, Packet
 from simpy.core import Environment
 
 
-# time is in seconds
+# time is in nanoseconds
 # size is in byte
 
 class ARCPolicy(Policy):
+    def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
+        Policy.__init__(self, env, forwarder, tier)
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
 
-    def __init__(self, tier: Tier, storage: StorageManager, env: Environment):
-        Policy.__init__(self, tier, storage, env)
-        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / storage.slot_size)
-
-    def replace(self, tstart_tlast: int, packet: Packet):
+    def _replace(self, env: Environment, packet: Packet):
         """
                If (T1 is not empty) and ((T1 length exceeds the target p) or (x is in DISK and T1 length == p))
                    Delete the LRU page in T1 (also remove it from the cache), and move it to MRU position in B1.
@@ -22,62 +22,62 @@ class ARCPolicy(Policy):
                    Delete the LRU page in T2 (also remove it from the cache), and move it to MRU position in B2.
                endif
                """
-        p1 = 0.1
-        p2 = 0.2
         if self.tier.t1 and (
                 (packet.name in self.tier.b2 and len(self.tier.t1) == self.tier.p) or (
                 len(self.tier.t1) > self.tier.p)):
             old = self.tier.t1.pop()
             print(self.tier.name + " move from t1 to b1 " + old.name)
             self.tier.b1.appendleft(old.name, old)
+
             # evict data
             self.tier.number_of_eviction_from_this_tier += 1
             self.tier.number_of_packets -= 1
             self.tier.used_size -= old.size
+
             # index update
-            self.storage.index.del_packet(old.name)
+            self.forwarder.index.del_packet(old.name)
         else:
             old = self.tier.t2.pop()
-            print("move from t2 to b2 " + old.name)
+            print(self.tier.name + "move from t2 to b2 " + old.name)
             self.tier.b2.appendleft(old.name, old)
+
             # evict data
             self.tier.number_of_eviction_from_this_tier += 1
             self.tier.number_of_packets -= 1
             self.tier.used_size -= old.size
-            # index update
-            self.storage.index.del_packet(old.name)
-            # store the removed packet from t2 in disk ?
-            x = numpy.random.uniform(low=0.0, high=1.0, size=None)
-            if x < p1:
-                print("drop packet" + old.name)
-                self.tier.b2.appendleft(old.name, old)
-            if p1 < x < p2:
-                target_tier_id = self.storage.tiers.index(self.tier) + 1
-                try:
-                    print("hpc-move data to disk " + old.name)
-                    self.storage.tiers[target_tier_id].write_packet(tstart_tlast, old,
-                                                                    "h")
-                    self.storage.tiers[target_tier_id].number_of_eviction_to_this_tier += 1
-                except:
-                    print("no other tier")
-            if x > p2:
-                target_tier_id = self.storage.tiers.index(self.tier) + 1
-                try:
-                    print("lpc-move data to disk " + old.name)
-                    self.storage.tiers[target_tier_id].write_packet(tstart_tlast, old,
-                                                                    "l")
-                    self.storage.tiers[target_tier_id].number_of_eviction_to_this_tier += 1
-                except:
-                    print("no other tier")
-        print("index length after = " + len(self.storage.index.index).__str__())
 
-    def on_packet_access(self, tstart_tlast: int, packet: Packet, isWrite: bool, drop="n"):
-        print("dram arc length = " + (len(self.tier.t1) + len(self.tier.t2)).__str__())
+            # index update
+            self.forwarder.index.del_packet(old.name)
+
+            # store the removed packet from t2 in disk ?
+            try:
+                target_tier_id = self.forwarder.tiers.index(self.tier) + 1
+
+                # data is important or Disk is free
+                if (old.priority == 'h' and self.forwarder.tiers[target_tier_id].submission_queue.__len__() !=
+                    self.forwarder.tiers[
+                        target_tier_id].submission_queue_max_size) or self.forwarder.tiers[
+                    target_tier_id].submission_queue.__len__() < 0.8 * \
+                        self.forwarder.tiers[
+                            target_tier_id].submission_queue_max_size:
+                    print("move data to disk " + old.name)
+                    self.forwarder.tiers[target_tier_id].write_packet(env, old, cause='eviction')
+                # disk is overloaded --> drop packet
+                else:
+                    print("drop packet" + old.name)
+                    self.tier.b2.appendleft(old.name, old)
+            except:
+                print("no other tier")
+
+        # print("index length after = " + len(self.forwarder.index.index).__str__())
+
+    def on_packet_access(self, env: Environment, packet: Packet, isWrite: bool):
+        print("dram ARC length = " + (len(self.tier.t1) + len(self.tier.t2)).__str__())
         # print("t1 size == " + self.tier.t1.__len__().__str__())
         # print("t2 size == " + self.tier.t2.__len__().__str__())
         # print("b1 size == " + self.tier.b1.__len__().__str__())
         # print("b2 size == " + self.tier.b2.__len__().__str__())
-        print("index length before = " + len(self.storage.index.index).__str__())
+        # print("index length before = " + len(self.forwarder.index.index).__str__())
 
         # if data already in cache --> return
         if isWrite and (self.tier.t1.__contains__(packet.name) or self.tier.t2.__contains__(packet.name)):
@@ -89,31 +89,43 @@ class ARCPolicy(Policy):
         #   Move x to MRU position in T2.
         if not isWrite and self.tier.t1.__contains__(packet.name):
             print("cache hit in t1, move from t1 of t2")
-            datapacket = self.tier.t1.__get__(packet.name)
             self.tier.t1.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, datapacket)
-            # chr
-            self.tier.chr += 1
+            self.tier.t2.appendleft(packet.name, packet)
+
             # time
-            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
-            self.tier.time_spent_reading += self.tier.latency + datapacket.size / self.tier.read_throughput
-            # read a data
+            yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+            if packet.priority == 'l':
+                self.tier.low_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+            else:
+                self.tier.high_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+
+            self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
             self.tier.number_of_reads += 1
+
+            yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
+            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
             self.tier.number_of_write += 1
             return
 
         if not isWrite and self.tier.t2.__contains__(packet.name):
             print("cache hit in t2, move from LRU to MRU of t2")
-            datapacket = self.tier.t2.__get__(packet.name)
             self.tier.t2.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, datapacket)
-            # chr
-            self.tier.chr += 1
+            self.tier.t2.appendleft(packet.name, packet)
+
             # time
-            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
-            self.tier.time_spent_reading += self.tier.latency + datapacket.size / self.tier.read_throughput
-            # read a data
+            # read
+            yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+            if packet.priority == 'l':
+                self.tier.low_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+            else:
+                self.tier.high_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+
+            self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
             self.tier.number_of_reads += 1
+
+            # write
+            yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
+            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
             self.tier.number_of_write += 1
             return
 
@@ -126,19 +138,22 @@ class ARCPolicy(Policy):
         if self.tier.b1.__contains__(packet.name):
             print("found in b1, move from b1 to t2")
             self.tier.p = min(self.nb_packets_capacity, self.tier.p + max(len(self.tier.b2) / len(self.tier.b1), 1))
-            datapacket = self.tier.b1.__get__(packet.name)
-            self.replace(tstart_tlast, datapacket)
+            self._replace(env, packet)
             self.tier.b1.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, datapacket)
+            self.tier.t2.appendleft(packet.name, packet)
+
             # index update
-            self.storage.index.update_packet_tier(packet.name, self.tier)
+            self.forwarder.index.update_packet_tier(packet.name, self.tier)
+
             # time
-            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
+            yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
+            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
             # write data
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-            self.tier.used_size += datapacket.size
-            print("index length after = " + len(self.storage.index.index).__str__())
+            self.tier.used_size += packet.size
+            print("index length after = " + len(self.forwarder.index.index).__str__())
             return
 
         # Case III: x is in B2 WRITE TO T2
@@ -150,20 +165,23 @@ class ARCPolicy(Policy):
         if self.tier.b2.__contains__(packet.name):
             print("found in b2, move from b2 to t2")
             self.tier.p = max(0, self.tier.p - max(len(self.tier.b1) / len(self.tier.b2), 1))
-            datapacket = self.tier.b2.__get__(packet.name)
-            self.replace(tstart_tlast, datapacket)
+            self._replace(env, packet)
 
             self.tier.b2.remove(packet.name)
-            self.tier.t2.appendleft(packet.name, datapacket)
+            self.tier.t2.appendleft(packet.name, packet)
+
             # index update
-            self.storage.index.update_packet_tier(packet.name, self.tier)
+            self.forwarder.index.update_packet_tier(packet.name, self.tier)
+
             # time
-            self.tier.time_spent_writing += self.tier.latency + datapacket.size / self.tier.write_throughput
+            yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
+            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
             # write data
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-            self.tier.used_size += datapacket.size
-            print("index length after = " + len(self.storage.index.index).__str__())
+            self.tier.used_size += packet.size
+            print("index length after = " + len(self.forwarder.index.index).__str__())
             return
 
         # Case IV: x is not in (T1 u B1 u T2 u B2) WRITE IN T1
@@ -174,20 +192,22 @@ class ARCPolicy(Policy):
             if len(self.tier.t1) < self.nb_packets_capacity:
                 print("remove LRU page in b1")
                 self.tier.b1.pop()
-                self.replace(tstart_tlast, packet)
+                self._replace(env, packet)
             else:
                 # Here B1 is empty.
                 # Delete LRU page in T1 (cache)
                 # evict data
                 old = self.tier.t1.pop()
                 print("Delete LRU page in t1 = " + old.name)
+
                 # evict data
                 self.tier.number_of_eviction_from_this_tier += 1
                 self.tier.number_of_packets -= 1
                 self.tier.used_size -= old.size
+
                 # index update
-                self.storage.index.del_packet(old.name)
-                print("index length after = " + len(self.storage.index.index).__str__())
+                self.forwarder.index.del_packet(old.name)
+                print("index length after = " + len(self.forwarder.index.index).__str__())
         else:
             # Case B: L1 (T1 u B1) has less than c pages.
             total = len(self.tier.t1) + len(self.tier.b1) + len(self.tier.t2) + len(self.tier.b2)
@@ -198,17 +218,22 @@ class ARCPolicy(Policy):
                     self.tier.b2.pop()
 
                 # REPLACE(x, p)
-                self.replace(tstart_tlast, packet)
+                self._replace(env, packet)
         print('write in t1')
+
         # Finally, fetch x to the cache and move it to MRU position in T1
         self.tier.t1.appendleft(packet.name, packet)
+
         # index update
-        self.storage.index.update_packet_tier(packet.name, self.tier)
+        self.forwarder.index.update_packet_tier(packet.name, self.tier)
+
         # time
+        yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
         self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
         # write data
         self.tier.number_of_packets += 1
         self.tier.number_of_write += 1
         self.tier.used_size += packet.size
-        print("index length after = " + len(self.storage.index.index).__str__())
+        print("index length after = " + len(self.forwarder.index.index).__str__())
         return

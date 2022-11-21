@@ -3,8 +3,7 @@ _DEBUG = False
 
 class Trace:
     # Column names extracted from recorder_viz, kept here as static members vars
-    _COLUMN_NAMES = ("path", "rank", "tstart", "tend",
-                     "offset", "count", "isRead", "segments")
+    _COLUMN_NAMES = ("packetType", "timestamp", "name", "size", "priority", "InterestLifetime", "responseTime")
 
     def __init__(self):
         self.data = []
@@ -12,10 +11,7 @@ class Trace:
     def gen_data(self, trace_len_limit=-1):
         raise NotImplementedError("Using unspecialized trace class.")
 
-    def read_data_line(self, env, storage, line, tstart_tlast, logs_enabled=True):
-        raise NotImplementedError("Using unspecialized trace class.")
-
-    def timestamp_from_line(self, line):
+    def read_data_line(self, env, forwarder, line, log_file, logs_enabled=True):
         raise NotImplementedError("Using unspecialized trace class.")
 
     @property

@@ -1,72 +1,90 @@
 import math
+from decimal import Decimal
 from policies.policy import Policy
-from storage_structures import StorageManager, Tier, Packet
+from forwarder_structures import Forwarder, Tier, Packet
 from simpy.core import Environment
 
 
 class LRUPolicy(Policy):
-    def __init__(self, tier: Tier, storage: StorageManager, env: Environment):
-        Policy.__init__(self, tier, storage, env)
-        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / storage.slot_size)
+    def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
+        Policy.__init__(self, env, forwarder, tier)
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
 
-    def on_packet_access(self, tstart_tlast: int, packet: Packet, isWrite: bool,
-                         drop="n"):
+    def on_packet_access(self, env: Environment, packet: Packet, isWrite: bool):
         print("disk LRU length = " + len(self.tier.lru_dict).__str__())
-        print("index length before = " + len(self.storage.index.index).__str__())
+        # print("index length before = " + len(self.forwarder.index.index).__str__())
         # print("capacity = "+self.nb_packets_capacity.__str__())
-        # print("disk used size bafore = "+self.tier.used_size.__str__())
+        # print("disk used size before = "+self.tier.used_size.__str__())
         # print("disk LRU = " + self.tier.lru_dict.items().__str__())
         # print(self.storage.index.__str__())
         if isWrite:
             if packet.name in self.tier.lru_dict:
-                print("data already in cache" + packet.name)
+                print("data already in cache " + packet.name)
                 return
+            li = [env.now, 'write', packet]
+            self.tier.submission_queue.append(li)
+        else:
+            li = [env.now, 'read', packet]
+            self.tier.submission_queue.append(li)
 
-            print("Writing to " + self.tier.name.__str__())
+        lis = self.tier.submission_queue[0]
+        if lis[1] == 'read':
+            writing = False
+        else:
+            writing = True
+
+        if writing:
             if len(self.tier.lru_dict) >= self.nb_packets_capacity:
-                for key, value in reversed(self.tier.lru_dict.items()):
-                    if value.lower() == drop.lower():
-                        print(key.__str__() + " evicted from " + self.tier.name.__str__())
-                        self.tier.lru_dict.pop(key)
-                        # evict data
-                        self.tier.number_of_eviction_from_this_tier += 1
-                        self.tier.number_of_packets -= 1
-                        self.tier.used_size -= value.size
-                        # index update
-                        self.storage.index.del_packet(key)
-                        print("index length after = " + len(self.storage.index.index).__str__())
-                        break
+                old, name = reversed(self.tier.lru_dict.popitem())
+                print(old.name + " evicted from " + self.tier.name)
+
+                # evict data
+                self.tier.number_of_eviction_from_this_tier += 1
+                self.tier.number_of_packets -= 1
+                self.tier.used_size -= old.size
+
+                # index update
+                self.forwarder.index.del_packet(old.name)
+                # print("index length after = " + len(self.forwarder.index.index).__str__())
+
+            print("writing " + lis[2].name + " to " + self.tier.name.__str__())
+            yield env.timeout(lis[2].size / self.tier.write_throughput)
             self.tier.lru_dict[packet.name] = packet
             self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
+
+            print('=========')
+            print("finished writing " + lis[2].name + " to " + self.tier.name.__str__())
+            self.tier.submission_queue.pop(0)
+
             # index update
-            self.storage.index.update_packet_tier(packet.name, self.tier)
+            self.forwarder.index.update_packet_tier(packet.name, self.tier)
+
             # time
-            if tstart_tlast > self.tier.last_completion_time:
-                self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
-                self.tier.last_completion_time = self.tier.latency + packet.size / self.tier.write_throughput
-            else:
-                self.tier.time_spent_writing += self.tier.last_completion_time - tstart_tlast + self.tier.latency \
-                                                + packet.size / self.tier.write_throughput
-                self.tier.last_completion_time = self.tier.last_completion_time - tstart_tlast + self.tier.latency \
-                                                 + packet.size / self.tier.write_throughput
+            self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
             # write data
+            self.tier.used_size += packet.size
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
-            self.tier.used_size += packet.size
-            print("index length after = " + len(self.storage.index.index).__str__())
+
+            # print("index length after = " + len(self.forwarder.index.index).__str__())
         else:
-            print("cache hit")
+            print("reading " + lis[2].name + " to " + self.tier.name.__str__())
+            yield env.timeout(lis[2].size / self.tier.read_throughput)
             self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
-            self.tier.chr += 1  # chr
+
+            print('=========')
+            print("finished reading " + lis[2].name + " to " + self.tier.name.__str__())
+            self.tier.submission_queue.pop(0)
+
             # time
-            if tstart_tlast > self.tier.last_completion_time:
-                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
-                self.tier.last_completion_time = self.tier.latency + packet.size / self.tier.read_throughput
+            if packet.priority == 'l':
+                self.tier.low_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
             else:
-                self.tier.time_spent_reading += self.tier.last_completion_time - tstart_tlast + self.tier.latency \
-                                                + packet.size / self.tier.read_throughput
-                self.tier.last_completion_time = self.tier.last_completion_time - tstart_tlast + self.tier.latency \
-                                                 + packet.size / self.tier.read_throughput
+                self.tier.high_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+
+            self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+
             # read a data
             self.tier.number_of_reads += 1
 
@@ -76,4 +94,4 @@ class LRUPolicy(Policy):
         self.tier.number_of_prefetching_from_this_tier += 1
         self.tier.number_of_packets -= 1
         self.tier.used_size -= packet.size
-        self.storage.index.del_packet(packet.name)
+        self.forwarder.index.del_packet(packet.name)

@@ -1,80 +1,70 @@
 import csv
-import random
-import pandas as pd
 import numpy as np
-from random_word import RandomWords
 import time
+from numpy import random
+from forwarder_structures import Packet
 
 
 # time is in nanosecond
 # size is in byte
+# 'data_back', 'timestamp', 'name', 'size', 'priority', 'InterestLifetime', 'response_time'
 
 class TraceCreator:
-    # N: catalogue size
-    # alpha: Zipf Law
-    # traffic_period: in minutes
-    def __init__(self, N: int, alpha: float, traffic_period: int):
-        self.gen_trace(N, alpha, traffic_period)
+    def __init__(self, NUniqueItems: int, HighPriorityContentPourcentage: float,
+                 ZipfAlpha: float, PoissonLambda: float, LossProbability: float,
+                 MinDataSize: int, MaxDataSize: int,
+                 MinDataRTT: int, MaxDataRTT: int,
+                 InterestLifetime: int, traffic_period: int):
+        """"
+        :param NUniqueItems: number of unique items
+        :param ZipfAlpha: alpha of the distribution Zipf
+        :param PoissonLambda: lambda of the poisson distribution
+        :param LossProbability: interest loss in ]0, 1[
+        :param MinDataSize: minimum data size octets
+        :param MaxDataSize: maximum data size octets
+        :param MinDataRTT: minimum response time for an interest in ns
+        :param MaxDataRTT: maximum response time for an interest in ns
+        :param InterestLifetime: interest life time in ns
+        :param traffic_period: end - start timestamps of the trace in minutes
+        """""
 
-    def gen_trace(self, N: int, alpha: float, traffic_period: int):
-        # generate a catalog of items
-        words = []
-        random_words = RandomWords()
-        while len(words) <= N:
-            x = random_words.get_random_words()
-            if type(x) == list:
-                df = pd.Series(x)
-                d = df.str.encode('ascii', 'ignore').str.decode('ascii')
-                words += d.tolist()
-            else:
-                continue
+        # generate a catalog of items. Assign each item a size
+        unique_words = dict()
+        Nhpc = int(round(NUniqueItems * HighPriorityContentPourcentage, 0))
+        nhpc = 0
+        for i in range(NUniqueItems):
+            size = int(round(np.random.uniform(MinDataSize, MaxDataSize), 0))
+            priority = 'h'
+            nhpc += 1
+            if nhpc >= Nhpc:
+                priority = 'l'
+            packet = Packet("d", 0, i, size, priority)
+            unique_words[i] = packet
 
-        unique_words = [*set(words)]
-        unique_words = unique_words[0: N]
-
-        # generate current timestamp
+        # generate current timestamp in nanoseconds
         t = int(round(time.time_ns(), 0))
-        lines_in_cs = []
-        words_in_cs = []
-        with open('resources/dataset_ndn/synthetic-trace.csv', 'w', encoding="utf-8",
+
+        # run for traffic_period minutes
+        end = t + traffic_period * 60000000000
+
+        with open('resources/dataset_ndn/synthetic-trace-' + PoissonLambda.__str__() + '.csv', 'w', encoding="utf-8",
                   newline='') as f:
             writer = csv.writer(f)
-            # run for 1min and 30s
-            end = t + traffic_period * 60000000000
             while t < end:
-                # create requests on the words following a zipf's law
-                index = np.random.zipf(alpha)
+                # create requests on the words following a Zipf law
+                index = np.random.zipf(ZipfAlpha)
                 while index >= len(unique_words):
-                    index = np.random.zipf(alpha)
-                # in ms turn to nanosecond
-                responseTime = int(round(random.randrange(1000000, 10000000), 0))
-                datasize = int(round(np.random.uniform(100, 8000), 0))
-                # if unique_words[index] in node_words:
-                if unique_words[index] in words_in_cs:
-                    # 50% retransmission interest packet 50% retransmission data packet
-                    p1 = 0.5
-                    x = np.random.uniform(low=0.0, high=1.0, size=None)
-                    if x < p1:
-                        for line in lines_in_cs:
-                            if line[2] == unique_words[index]:
-                                l = ["i", t, unique_words[index], line[3], line[4], line[5]]
-                                break
-                    else:
-                        for line in lines_in_cs:
-                            if line[2] == unique_words[index]:
-                                l = ["d", t, unique_words[index], line[3], line[4], line[5]]
-                                break
+                    index = np.random.zipf(ZipfAlpha)
+                # generate response time following
+                response_time = int(round(np.random.uniform(MinDataRTT, MaxDataRTT), 0))
+                if np.random.uniform(low=0.0, high=1.0, size=None) < LossProbability:
+                    # the data for this interest won't return
+                    li = ["i", t, unique_words[index].name, unique_words[index].size, 'l',
+                          InterestLifetime, response_time]
+                    writer.writerow(li)
                 else:
-                    # 50% high priority packets 50% low priority packets
-                    p1 = 0.5
-                    x = np.random.uniform(low=0.0, high=1.0, size=None)
-                    if x < p1:
-                        l = ["d", t, unique_words[index], datasize, "h", responseTime]
-                    else:
-                        l = ["d", t, unique_words[index], datasize, "l", responseTime]
-                # write the data
-                writer.writerow(l)
-                # add nanoseconds
-                t += int(round(random.uniform(489, 1000000000), 0))
-                lines_in_cs.append(l)
-                words_in_cs.append(unique_words[index])
+                    # the data for this interest will return
+                    ld = ["d", t, unique_words[index].name, unique_words[index].size, unique_words[index].priority,
+                          InterestLifetime, response_time]
+                    writer.writerow(ld)
+                t += int(round(random.exponential(PoissonLambda) * 10e6, 0))
