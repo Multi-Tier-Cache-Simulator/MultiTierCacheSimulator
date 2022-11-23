@@ -1,6 +1,5 @@
 import csv
 from decimal import Decimal
-
 from resources import NDN_PACKETS
 from forwarder_structures import Packet
 from traces.trace import Trace
@@ -21,7 +20,7 @@ class NDNTrace(Trace):
                 if trace_len_limit > 0:
                     self.data = self.data[:min(len(self.data), trace_len_limit)]
 
-    def read_data_line(self, env, forwarder, line, log_file, logs_enabled=True):
+    def read_data_line(self, env, res, forwarder, line, log_file, logs_enabled=True):
         """Read a line, and fire events if necessary"""
         print("=========")
         data_back, timestamp, name, size, priority, interest_life_time, response_time = line
@@ -54,15 +53,16 @@ class NDNTrace(Trace):
 
                 print("Prefetch data to default tier " + forwarder.get_default_tier().name.__str__())
                 tier.prefetch_packet(packet)
-                forwarder.get_default_tier().write_packet(env, packet, cause='prefetching')
+                forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching")
 
                 # read data from dram
                 print("read from dram")
-                forwarder.get_default_tier().read_packet(env, packet)
+                forwarder.get_default_tier().read_packet(env, res, packet)
+                print("finished reading from dram in ndn_trace")
             else:
                 # read data from dram
                 print("read from dram")
-                forwarder.get_default_tier().read_packet(env, packet)
+                forwarder.get_default_tier().read_packet(env, res, packet)
                 # chr
                 forwarder.get_default_tier().chr += 1
                 if priority == 'h':
@@ -104,7 +104,6 @@ class NDNTrace(Trace):
 
             print("=========")
             print(packet.name + ', data arrives at ' + env.now.__str__())
-            forwarder.pit.__str__()
             if not forwarder.pit.pit_has_name(name):
                 print("data already came")
                 return
@@ -116,7 +115,7 @@ class NDNTrace(Trace):
             # write data to default-tier
             print("write to default-tier")
             tier = forwarder.get_default_tier()
-            tier.write_packet(env, packet)
+            tier.write_packet(env, res, packet)
             # delete pit entry
             forwarder.pit.del_from_pit(name)
         else:

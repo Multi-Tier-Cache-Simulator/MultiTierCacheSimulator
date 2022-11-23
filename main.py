@@ -4,16 +4,18 @@ import time
 import simpy
 import pandas as pd
 import matplotlib.pyplot as plt
+
+from policies.DISK.lru_policy import LRUPolicy
+from policies.DISK.random_policy import RandPolicy
+from policies.DRAM.arcpolicy import ARCPolicy
+from policies.DRAM.dram_lru_policy import DRAMLRUPolicy
+from policies.DRAM.dram_random_policy import DRAMRandPolicy
 from simulation import Simulation
 from traces.ndn_trace import NDNTrace
 from forwarder_structures import Tier, Forwarder, Index, PIT
-from policies.arcpolicy import ARCPolicy
-from policies.dram_lru_policy import DRAMLRUPolicy
-from policies.dram_random_policy import DRAMRandPolicy
-from policies.dram_lfu_cache import DRAMLFUPolicy
-from policies.lru_policy import LRUPolicy
-from policies.random_policy import RandPolicy
-from policies.lfu_policy import LFUPolicy
+from policies.DRAM.dram_lfu_cache import DRAMLFUPolicy
+from policies.DISK.lfu_policy import LFUPolicy
+# from traces.trace_creator import TraceCreator
 
 # time is in nanos
 # size is in byte
@@ -33,7 +35,7 @@ slot_size = 9000
 # interest lifetime = 10ms
 # traffic period = 2880m = 48h
 # traceCreator = TraceCreator(NUniqueItems=3000, HighPriorityContentPourcentage=0.5,
-#                             ZipfAlpha=1.2, PoissonLambda=0.1, LossProbability=0.0,
+#                             ZipfAlpha=1.2, PoissonLambda=10.0, LossProbability=0.0,
 #                             MinDataSize=100, MaxDataSize=8000,
 #                             MinDataRTT=10000000, MaxDataRTT=200000000,
 #                             InterestLifetime=1000000,
@@ -41,7 +43,8 @@ slot_size = 9000
 
 # turn the trace into packets
 trace = NDNTrace()
-trace.gen_data(trace_len_limit=2000)
+trace.gen_data()
+# trace.gen_data(trace_len_limit=2000)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -96,8 +99,8 @@ plot_low_p_data_retrieval_time = []
 # available policies
 dramTierPolicies = [ARCPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
 diskTierPolicies = [LRUPolicy, LFUPolicy, RandPolicy]
-# dramTierPolicies = [DRAMLFUPolicy]
-# diskTierPolicies = [LRUPolicy]
+# dramTierPolicies = [ARCPolicy]
+# diskTierPolicies = [LFUPolicy]
 # 2 tiers
 for dramPolicy in dramTierPolicies:
     for diskPolicy in diskTierPolicies:

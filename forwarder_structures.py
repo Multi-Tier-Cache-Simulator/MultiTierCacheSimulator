@@ -2,130 +2,6 @@ import collections
 from collections import OrderedDict
 from simpy.core import Environment
 from typing import List
-from collections import defaultdict
-
-
-class Node(object):
-    def __init__(self, key, value):
-        self.key, self.value = key, value
-        self.prev, self.nxt = None, None
-        return
-
-
-class DoubleLinkedList(object):
-    def __init__(self):
-        self.head_sentinel, self.tail_sentinel, self.count = Node(None, None), Node(None, None), 0
-        self.head_sentinel.nxt, self.tail_sentinel.prev = self.tail_sentinel, self.head_sentinel
-        self.count = 0
-
-    def insert(self, x, node):
-        if node is None:
-            raise
-        temp = x.nxt
-        x.nxt, node.prev = node, x
-        node.nxt, temp.prev = temp, node
-        self.count += 1
-
-    def appendleft(self, node):
-        if node is None:
-            raise
-        self.insert(self.head_sentinel, node)
-
-    def append(self, node):
-        if node is None:
-            raise
-        self.insert(self.get_tail(), node)
-
-    def remove(self, node):
-        if node is None:
-            raise
-        prev_node = node.prev
-        prev_node.nxt, node.nxt.prev = node.nxt, prev_node
-        self.count -= 1
-
-    def pop(self):
-        if self.size() < 1:
-            raise
-        self.remove(self.get_tail())
-
-    def popleft(self):
-        if self.size() < 1:
-            raise
-        self.remove(self.get_head())
-
-    def size(self):
-        return self.count
-
-    def get_head(self):
-        return self.head_sentinel.nxt if self.count > 0 else None
-
-    def get_tail(self):
-        return self.tail_sentinel.prev if self.count > 0 else None
-
-
-class LinkedHashSet:
-    def __init__(self):
-        self.node_map, self.dll = {}, DoubleLinkedList()
-
-    def size(self):
-        return len(self.node_map)
-
-    def contains(self, key):
-        return key in self.node_map
-
-    def search(self, key):
-        if not self.contains(key):
-            raise
-        return self.node_map[key].value
-
-    def appendleft(self, key, value):
-        if not self.contains(key):
-            node = Node(key, value)
-            self.dll.appendleft(node)
-            self.node_map[key] = node
-        else:
-            self.node_map[key].value = value
-            self.moveleft(key)
-
-    def append(self, key, value):
-        if not self.contains(key):
-            node = Node(key, value)
-            self.dll.append(node)
-            self.node_map[key] = node
-        else:
-            self.node_map[key].value = value
-            self.moveright(key)
-
-    def moveleft(self, key):
-        if not self.contains(key):
-            raise
-        node = self.node_map[key]
-        self.dll.remove(node)
-        self.dll.appendleft(node)
-
-    def moveright(self, key):
-        if not self.contains(key):
-            raise
-        node = self.node_map[key]
-        self.dll.remove(node)
-        self.dll.append(node)
-
-    def remove(self, key):
-        if not self.contains(key):
-            raise
-        node = self.node_map[key]
-        self.dll.remove(node)
-        self.node_map.pop(key)
-
-    def popleft(self):
-        key = self.dll.get_head().key
-        self.remove(key)
-        return key
-
-    def pop(self):
-        key = self.dll.get_tail().key
-        self.remove(key)
-        return key
 
 
 class Deque(object):
@@ -248,20 +124,19 @@ class Tier:
         self.chrlpc = 0  # cache hit ratio for low priority content
         self.cmr = 0  # cache miss ratio
 
-        self.p = 0  # Target size for the list T1
-
         # Random structure
         self.random_struct = dict()
 
         # LFU structure
-        self.min_f = 1
-        self.freq_map = defaultdict(LinkedHashSet)  # frequency:LinkedHashSet
-        self.cache = {}  # key:(value, frequency)
+        self.freqToKey = collections.defaultdict(dict)  # frequency to dict of <key, val>
+        self.keyToFreq = collections.defaultdict(int)
+        self.keyToVal = collections.defaultdict(int)
 
         # LRU structure
         self.lru_dict = OrderedDict()
 
         # ARC structure
+        self.p = 0  # Target size for the list T1
         # L1: only once recently
         self.t1 = Deque()  # T1: recent cache entries
         self.b1 = Deque()  # B1: ghost entries recently evicted from the T1 cache
@@ -276,13 +151,20 @@ class Tier:
     def register_listener(self, listener: "Policy"):
         self.listeners += [listener]
 
-    def read_packet(self, env: Environment, packet):
+    def read_packet(self, env: Environment, res, packet):
         for listener in self.listeners:
-            env.process(listener.on_packet_access(env, packet, False))
+            print("//////////")
+            print("read packet")
+            env.process(listener.on_packet_access(env, res, packet, False))
+            print("//////////")
 
-    def write_packet(self, env: Environment, packet, cause=None):
+    def write_packet(self, env: Environment, res, packet, cause=None):
         for listener in self.listeners:
-            env.process(listener.on_packet_access(env, packet, True))
+            print("//////////")
+            print("write packet")
+            env.process(listener.on_packet_access(env, res, packet, True))
+            print("//////////")
+            # self.submission_queue.pop(0)
 
         if cause is not None:
             if cause == "eviction":

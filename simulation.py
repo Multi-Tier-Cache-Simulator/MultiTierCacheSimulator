@@ -1,4 +1,6 @@
 import math
+
+import simpy
 from simpy.core import Environment
 from traces.trace import Trace
 from forwarder_structures import Forwarder
@@ -14,6 +16,8 @@ class Simulation:
         self._forwarder = forwarder
         self._log_file = log_file
         self._logs_enabled = logs_enabled
+        self._res = [simpy.Resource(env, capacity=1)
+                     for _ in range(forwarder.tiers.__len__())]
 
         # Adding traces to env as processes
         for trace in traces:
@@ -58,7 +62,7 @@ class Simulation:
             yield self._env.timeout(max(0, tstart - last_ts))  # traces are sorted by tstart order.
             last_ts = tstart
             self._env.process(
-                trace.read_data_line(self._env, self._forwarder, line, self._log_file, self._logs_enabled))
+                trace.read_data_line(self._env, self._res, self._forwarder, line, self._log_file, self._logs_enabled))
 
         log_stream = sys.stdout
         sys.stdout = backup_stdout
