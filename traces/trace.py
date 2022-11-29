@@ -3,7 +3,7 @@ _DEBUG = False
 
 class Trace:
     # Column names extracted from recorder_viz, kept here as static members vars
-    _COLUMN_NAMES = ("packetType", "timestamp", "name", "size", "priority", "InterestLifetime", "responseTime")
+    _COLUMN_NAMES = ("data_back", "timestamp", "name", "size", "priority", "InterestLifetime", "responseTime")
 
     def __init__(self):
         self.data = []

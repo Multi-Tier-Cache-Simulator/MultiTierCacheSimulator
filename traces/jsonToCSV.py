@@ -27,14 +27,14 @@ class JsonToCSVTrace:
         self.gen_trace(fileName, trace_len_limit)
 
     def gen_trace(self, fileName: str, trace_len_limit=-1):
-        # 'packetType', 'timestamp', 'name', 'size', 'priority', 'responseTime'
+        # 'data_back', 'timestamp', 'name', 'size', 'priority', 'responseTime'
         # gather the catalog of items from the trace
         lines = []
         # turn the json file to list
         for line in gzip.open(fileName, "r"):
             lines.append(json.loads(line))
 
-        # Use only lines that have packetType, timestamp, size and name
+        # Use only lines that have data_back, timestamp, size and name
         linesForSimu = [line for line in lines if 't' in line and 'ts' in line and 'size3' in line and 'name' in line]
         if trace_len_limit != -1:
             linesForSimu = linesForSimu[0:trace_len_limit]

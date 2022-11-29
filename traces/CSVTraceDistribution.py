@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-# _COLUMN_NAMES = ("packetType", "timestamp", "name", "size", "priority", "responseTime ")
+# _COLUMN_NAMES = ("data_back", "timestamp", "name", "size", "priority", "responseTime ")
 
 class CSVTraceDistributions:
     def __init__(self, fileName: str):

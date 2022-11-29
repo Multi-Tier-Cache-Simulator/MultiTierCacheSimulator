@@ -10,19 +10,19 @@ class LRUPolicy(Policy):
         Policy.__init__(self, env, forwarder, tier)
         self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
 
-    def on_packet_access(self, env: Environment, res, packet: Packet, isWrite: bool):
+    def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
         print('Queue size: %s' % len(res[1].queue))
         with res[1].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
-            if isWrite:
+            if is_write:
                 if len(self.tier.lru_dict) > self.nb_packets_capacity:
                     old, name = reversed(self.tier.lru_dict.popitem())
                     print(name + " evicted from " + self.tier.name)
 
                     # index update
-                    self.forwarder.index.del_packet(name)
+                    self.forwarder.index.del_packet_from_cs(name)
 
                     # evict data
                     self.tier.number_of_eviction_from_this_tier += 1
@@ -73,4 +73,4 @@ class LRUPolicy(Policy):
         self.tier.number_of_prefetching_from_this_tier += 1
         self.tier.number_of_packets -= 1
         self.tier.used_size -= packet.size
-        self.forwarder.index.del_packet(packet.name)
+        self.forwarder.index.del_packet_from_cs(packet.name)

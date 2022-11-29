@@ -10,7 +10,7 @@ class Deque(object):
     def __init__(self):
         self.od = OrderedDict()
 
-    def appendleft(self, key, value):
+    def append_left(self, key, value):
         if key in self.od:
             del self.od[key]
         self.od[key] = value
@@ -43,8 +43,8 @@ class Deque(object):
 
 
 class Packet:
-    def __init__(self, packetType, timestamp, name, size, priority):
-        self.packetType = packetType
+    def __init__(self, packet_type, timestamp, name, size, priority):
+        self.packetType = packet_type
         self.name = name
         self.size = size
         self.priority = priority
@@ -120,8 +120,8 @@ class Tier:
         self.low_p_data_retrieval_time = 0
 
         self.chr = 0  # cache hit ratio
-        self.chrhpc = 0  # cache hit ratio for high priority content
-        self.chrlpc = 0  # cache hit ratio for low priority content
+        self.chr_hpc = 0  # cache hit ratio for high priority content
+        self.chr_lpc = 0  # cache hit ratio for low priority content
         self.cmr = 0  # cache miss ratio
 
         # Random structure
@@ -139,10 +139,10 @@ class Tier:
         self.p = 0  # Target size for the list T1
         # L1: only once recently
         self.t1 = Deque()  # T1: recent cache entries
-        self.b1 = Deque()  # B1: ghost entries recently evicted from the T1 cache
+        # self.b1 = Deque()  # B1: ghost entries recently evicted from the T1 cache
         # L2: at least twice recently
         self.t2 = Deque()  # T2: frequent entries
-        self.b2 = Deque()  # B2: ghost entries recently evicted from the T2 cache
+        # self.b2 = Deque()  # B2: ghost entries recently evicted from the T2 cache
 
         # disk structure
         self.submission_queue = []
@@ -182,39 +182,72 @@ class Tier:
 class Index:
     # add the time of writing to the index as well ?
     def __init__(self):
-        self.index = dict()  # key: packet_name, value: tier
+        self.active_index = dict()  # key: packet_name, value: tier
+        self.ghost_index = dict()  # key: packet_name, value: b1 or b2
 
-    def __str__(self):
-        print("index")
-        for key, value in self.index.items():
-            print(key + value.name, end="")
-        print(" ")
-
-    # return the tier where the packet is
-    def get_packet_tier(self, name: str):
-        if name in self.index.keys():
-            return self.index[name]
+    def __str__(self, what='index'):
+        if what == 'index':
+            print("index")
+            for packet_name, tier_name in self.active_index.items():
+                print(packet_name + ':' + tier_name, end=",")
+            print(" ")
         else:
+            print("ghost index")
+            for packet_name, queue_name in self.ghost_index.items():
+                print(packet_name + ':' + queue_name, end=",")
+            print(" ")
+
+    # index
+    def get_packet_tier(self, packet_name: str):
+        if packet_name in self.active_index.keys():
+            return self.active_index[packet_name]
+        else:
+            print('packet not in cs')
             return -1
 
-    def index_has_name(self, name: str):
-        if name in self.index:
+    def cs_has_packet(self, packet_name: str):
+        if packet_name in self.active_index:
             return True
         else:
             return False
 
-    def tier_has_packet(self, tier: Tier, name: str):
-        if self.index[name] == tier:
+    def packet_in_tier(self, packet_name: str, tier: Tier):
+        if self.active_index[packet_name] == tier:
             return True
         else:
             return False
 
-    # update index
-    def update_packet_tier(self, name: str, tier: Tier):
-        self.index[name] = tier
+    def update_packet_tier(self, packet_name: str, tier: Tier):
+        self.active_index[packet_name] = tier
 
-    def del_packet(self, name: str):
-        self.index.pop(name)
+    def del_packet_from_cs(self, packet_name: str):
+        self.active_index.pop(packet_name)
+
+    # ghost index
+    def packet_in_queue(self, packet_name: str, queue_name: str):
+        if packet_name in self.ghost_index.keys():
+            if self.ghost_index[packet_name] == queue_name:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def update_packet_queue(self, packet_name: str, queue_name: str):
+        self.ghost_index[packet_name] = queue_name
+
+    def del_packet_from_queues(self, packet_name: str):
+        self.ghost_index.pop(packet_name)
+
+    def pop_packet_from_queue(self, queue_name: str):
+        q_name = [packet_name for packet_name in self.ghost_index.keys() if
+                  self.ghost_index[packet_name] == queue_name]
+        packet_name = q_name[0]
+        self.ghost_index.pop(packet_name)
+
+    def queue_len(self, queue_name: str):
+        return len([packet_name for packet_name in self.ghost_index.keys() if
+                    self.ghost_index[packet_name] == queue_name])
 
 
 class Forwarder:

@@ -10,33 +10,33 @@ from forwarder_structures import Packet
 # 'data_back', 'timestamp', 'name', 'size', 'priority', 'InterestLifetime', 'response_time'
 
 class TraceCreator:
-    def __init__(self, NUniqueItems: int, HighPriorityContentPourcentage: float,
-                 ZipfAlpha: float, PoissonLambda: float, LossProbability: float,
-                 MinDataSize: int, MaxDataSize: int,
-                 MinDataRTT: int, MaxDataRTT: int,
-                 InterestLifetime: int, traffic_period: int):
+    def __init__(self, n_unique_items: int, high_priority_content_percentage: float,
+                 zipf_alpha: float, poisson_lambda: float, loss_probability: float,
+                 min_data_size: int, max_data_size: int,
+                 min_data_rtt: int, max_data_rtt: int,
+                 interest_lifetime: int, traffic_period: int):
         """"
-        :param NUniqueItems: number of unique items
-        :param ZipfAlpha: alpha of the distribution Zipf
-        :param PoissonLambda: lambda of the poisson distribution
-        :param LossProbability: interest loss in ]0, 1[
-        :param MinDataSize: minimum data size octets
-        :param MaxDataSize: maximum data size octets
-        :param MinDataRTT: minimum response time for an interest in ns
-        :param MaxDataRTT: maximum response time for an interest in ns
-        :param InterestLifetime: interest life time in ns
+        :param n_unique_items: number of unique items
+        :param zipf_alpha: alpha of the distribution Zipf
+        :param poisson_lambda: lambda of the poisson distribution
+        :param loss_probability: interest loss in ]0, 1[
+        :param min_data_size: minimum data size octets
+        :param max_data_size: maximum data size octets
+        :param min_data_rtt: minimum response time for an interest in ns
+        :param max_data_rtt: maximum response time for an interest in ns
+        :param interest_lifetime: interest life time in ns
         :param traffic_period: end - start timestamps of the trace in minutes
         """""
 
         # generate a catalog of items. Assign each item a size
         unique_words = dict()
-        Nhpc = int(round(NUniqueItems * HighPriorityContentPourcentage, 0))
-        nhpc = 0
-        for i in range(NUniqueItems):
-            size = int(round(np.random.uniform(MinDataSize, MaxDataSize), 0))
+        n_hpc = int(round(n_unique_items * high_priority_content_percentage, 0))
+        n_hpc_created = 0
+        for i in range(n_unique_items):
+            size = int(round(np.random.uniform(min_data_size, max_data_size), 0))
             priority = 'h'
-            nhpc += 1
-            if nhpc >= Nhpc:
+            n_hpc_created += 1
+            if n_hpc_created >= n_hpc:
                 priority = 'l'
             packet = Packet("d", 0, i, size, priority)
             unique_words[i] = packet
@@ -47,24 +47,24 @@ class TraceCreator:
         # run for traffic_period minutes
         end = t + traffic_period * 60000000000
 
-        with open('resources/dataset_ndn/synthetic-trace-' + PoissonLambda.__str__() + '.csv', 'w', encoding="utf-8",
+        with open('resources/dataset_ndn/synthetic-trace-' + poisson_lambda.__str__() + '.csv', 'w', encoding="utf-8",
                   newline='') as f:
             writer = csv.writer(f)
             while t < end:
                 # create requests on the words following a Zipf law
-                index = np.random.zipf(ZipfAlpha)
+                index = np.random.zipf(zipf_alpha)
                 while index >= len(unique_words):
-                    index = np.random.zipf(ZipfAlpha)
+                    index = np.random.zipf(zipf_alpha)
                 # generate response time following
-                response_time = int(round(np.random.uniform(MinDataRTT, MaxDataRTT), 0))
-                if np.random.uniform(low=0.0, high=1.0, size=None) < LossProbability:
+                response_time = int(round(np.random.uniform(min_data_rtt, max_data_rtt), 0))
+                if np.random.uniform(low=0.0, high=1.0, size=None) < loss_probability:
                     # the data for this interest won't return
                     li = ["i", t, unique_words[index].name, unique_words[index].size, 'l',
-                          InterestLifetime, response_time]
+                          interest_lifetime, response_time]
                     writer.writerow(li)
                 else:
                     # the data for this interest will return
                     ld = ["d", t, unique_words[index].name, unique_words[index].size, unique_words[index].priority,
-                          InterestLifetime, response_time]
+                          interest_lifetime, response_time]
                     writer.writerow(ld)
-                t += int(round(random.exponential(PoissonLambda) * 10e6, 0))
+                t += int(round(random.exponential(poisson_lambda) * 10e6, 0))

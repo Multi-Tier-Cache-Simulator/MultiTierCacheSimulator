@@ -152,10 +152,10 @@ for dramPolicy in dramTierPolicies:
             dram.chr / nb_interests)
         # chr high priority content
         plot_cache_hit_ratio_hpc_ram.append(0.0) if nb_high_priority == 0 else plot_cache_hit_ratio_hpc_ram.append(
-            dram.chrhpc / nb_high_priority)
+            dram.chr_hpc / nb_high_priority)
         # chr low priority content
         plot_cache_hit_ratio_lpc_ram.append(0.0) if nb_low_priority == 0 else plot_cache_hit_ratio_lpc_ram.append(
-            dram.chrlpc / nb_low_priority)
+            dram.chr_lpc / nb_low_priority)
         # used size
         plot_used_size_ram.append(dram.used_size / (dram.max_size * dram.target_occupation))
         # waisted size
@@ -188,10 +188,10 @@ for dramPolicy in dramTierPolicies:
             nvme.chr / nb_interests)
         # chr high priority content
         plot_cache_hit_ratio_hpc_disk.append(0.0) if nb_high_priority == 0 else plot_cache_hit_ratio_hpc_disk.append(
-            nvme.chrhpc / nb_high_priority)
+            nvme.chr_hpc / nb_high_priority)
         # chr low priority content
         plot_cache_hit_ratio_lpc_disk.append(0.0) if nb_low_priority == 0 else plot_cache_hit_ratio_lpc_disk.append(
-            nvme.chrlpc / nb_low_priority)
+            nvme.chr_lpc / nb_low_priority)
         # used size
         plot_used_size_disk.append(nvme.used_size / (nvme.max_size * nvme.target_occupation))
         # waisted size
@@ -266,10 +266,10 @@ for dramPolicy in dramTierPolicies:
         dram.chr / nb_interests)
     # chr high priority content
     plot_cache_hit_ratio_hpc_ram.append(0.0) if nb_high_priority == 0 else plot_cache_hit_ratio_hpc_ram.append(
-        dram.chrhpc / nb_high_priority)
+        dram.chr_hpc / nb_high_priority)
     # chr low priority content
     plot_cache_hit_ratio_lpc_ram.append(0.0) if nb_low_priority == 0 else plot_cache_hit_ratio_lpc_ram.append(
-        dram.chrlpc / nb_low_priority)
+        dram.chr_lpc / nb_low_priority)
     # used size
     plot_used_size_ram.append(dram.used_size / (dram.max_size * dram.target_occupation))
     # waisted size

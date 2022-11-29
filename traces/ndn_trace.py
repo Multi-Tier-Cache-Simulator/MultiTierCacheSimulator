@@ -1,12 +1,11 @@
 import csv
-from decimal import Decimal
 from resources import NDN_PACKETS
 from forwarder_structures import Packet
 from traces.trace import Trace
 
 
 class NDNTrace(Trace):
-    _COLUMN_NAMES = ("packetType", "timestamp", "name", "size", "priority", "InterestLifetime", "responseTime")
+    _COLUMN_NAMES = ("data_back", "timestamp", "name", "size", "priority", "InterestLifetime", "responseTime")
 
     def __init__(self):
         Trace.__init__(self)
@@ -29,13 +28,12 @@ class NDNTrace(Trace):
         interest_life_time = int(interest_life_time)
         response_time = int(response_time)
         packet = Packet(data_back, timestamp, name, size, priority)
-        # if priority == 'h':
-        #     return
-        # delete expired pit entries
+
+        # update the pit table entries by deleting the expired ones
         forwarder.pit.update_pit_times(env)
 
         # cache hit
-        if forwarder.index.index_has_name(name):
+        if forwarder.index.cs_has_packet(name):
             print("cache hit")
             print('interest on ' + packet.name + ' arrives at ' + env.now.__str__())
             print("read packet = " + name)
@@ -46,10 +44,10 @@ class NDNTrace(Trace):
                 # chr
                 tier.chr += 1
                 if priority == 'h':
-                    tier.chrhpc += 1
+                    tier.chr_hpc += 1
                 else:
                     if priority == 'l':
-                        tier.chrlpc += 1
+                        tier.chr_lpc += 1
 
                 print("Prefetch data to default tier " + forwarder.get_default_tier().name.__str__())
                 tier.prefetch_packet(packet)
@@ -66,10 +64,10 @@ class NDNTrace(Trace):
                 # chr
                 forwarder.get_default_tier().chr += 1
                 if priority == 'h':
-                    forwarder.get_default_tier().chrhpc += 1
+                    forwarder.get_default_tier().chr_hpc += 1
                 else:
                     if priority == 'l':
-                        forwarder.get_default_tier().chrlpc += 1
+                        forwarder.get_default_tier().chr_lpc += 1
             return
 
         # cache miss and pit hit
@@ -96,12 +94,6 @@ class NDNTrace(Trace):
         if data_back == "d":
             print("data is on its way")
             yield env.timeout(response_time)
-            if priority == 'l':
-                forwarder.get_default_tier().low_p_data_retrieval_time += Decimal(env.now) - timestamp
-            else:
-                forwarder.get_default_tier().high_p_data_retrieval_time += Decimal(env.now) - timestamp
-            forwarder.get_default_tier().time_spent_reading += env.now
-
             print("=========")
             print(packet.name + ', data arrives at ' + env.now.__str__())
             if not forwarder.pit.pit_has_name(name):

@@ -10,13 +10,13 @@ class DRAMLFUPolicy(Policy):
         Policy.__init__(self, env, forwarder, tier)
         self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
 
-    def on_packet_access(self, env: Environment, res, packet: Packet, isWrite: bool):
+    def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
         print('Queue size: %s' % len(res[0].queue))
         with res[0].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
-            if isWrite:
+            if is_write:
                 # free space if capacity full
                 def first(inp):
                     return next(iter(inp))
@@ -43,7 +43,7 @@ class DRAMLFUPolicy(Policy):
                         del self.tier.keyToVal[first_key]
 
                         # index update
-                        self.forwarder.index.del_packet(old.name)
+                        self.forwarder.index.del_packet_from_cs(old.name)
 
                         # evict data
                         self.tier.number_of_eviction_from_this_tier += 1
@@ -103,4 +103,3 @@ class DRAMLFUPolicy(Policy):
                 # read a data
                 self.tier.number_of_reads += 1
             print('%s leaving the resource at %s' % (self.tier.name, Decimal(env.now)))
-

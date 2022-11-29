@@ -1,9 +1,0 @@
-NDN short for Named Data Networking is the only project that succeded out of the five projects funded by the U.S.
-National Science Foundation under its Future Internet Architecture Program in 2010
-NDN is a specific architecture design that came as an improved version of Content Centric Network CCN which Van Jacobson first publicly presented in 2006
-NDN investigates the evolution from todays host-centric network architecture IP to a data-centric network architecture NDN
-When an Interest packet arrives an NDN router first checks the Content Store for matching data
-if it exists in the router the Data packet is returned on the interface from which the Interest came
-Otherwise the router looks up the name in its PIT and if a matching entry exists it simply records the incoming interface of this Interest in the PIT entry
-In the absence of a matching PIT entry the router will forward the Interest toward the data producers based on information in the FIB
-When a router receives Interests for the same name from multiple downstream nodes it forwards only the first one upstream toward the data producer

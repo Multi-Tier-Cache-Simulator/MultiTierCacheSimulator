@@ -1,5 +1,4 @@
 import math
-
 import simpy
 from simpy.core import Environment
 from traces.trace import Trace
@@ -19,7 +18,6 @@ class Simulation:
         self._res = [simpy.Resource(env, capacity=1)
                      for _ in range(forwarder.tiers.__len__())]
 
-        # Adding traces to env as processes
         for trace in traces:
             self._env.process(self._read_trace(trace))
 
@@ -29,23 +27,24 @@ class Simulation:
         self._env.run()
         print(f'Simulation finished after {round(time.time() - t0, 3)} seconds! Printing results:')
         s = f'\n{" " * 4}>> '
-        s2 = f'\n{" " * 8}>> '
         output = ""
         for tier in self._forwarder.tiers:
             output += (f'Tier "{tier.name}":'
                        f'{s}Total size {math.trunc(tier.max_size * tier.target_occupation)} o '
                        f'{s}Used size {tier.used_size} o '
                        f'{s}Waisted size {tier.number_of_packets * self._forwarder.slot_size - tier.used_size} o '
-                       f'{s2}{tier.number_of_prefetching_to_this_tier} prefetching to this tier'
-                       f'{s2}{tier.number_of_prefetching_from_this_tier} prefetching from this tier'
-                       f'{s2}{tier.number_of_eviction_to_this_tier} eviction to this tier'
-                       f'{s2}{tier.number_of_eviction_from_this_tier} eviction from this tier'
+                       f'{s}{tier.number_of_prefetching_to_this_tier} prefetching to this tier'
+                       f'{s}{tier.number_of_prefetching_from_this_tier} prefetching from this tier'
+                       f'{s}{tier.number_of_eviction_to_this_tier} eviction to this tier'
+                       f'{s}{tier.number_of_eviction_from_this_tier} eviction from this tier'
                        f'{s}{tier.number_of_write} total write'
                        f'{s}{tier.number_of_reads} total reads'
                        f'{s}Time spent reading {tier.time_spent_reading} ns'
                        f'{s}Time spent writing {tier.time_spent_writing} ns'
-                       f'{s}Cache hit ratio {tier.chr}'
-                       f'{s}Cache miss ratio {tier.cmr}\n\n')
+                       f'{s}High priority content retrieval time {tier.high_p_data_retrieval_time} ns'
+                       f'{s}Low priority content retrieval time {tier.low_p_data_retrieval_time} ns'
+                       f'{s}Cache hit number {tier.chr}'
+                       f'{s}Cache miss number {tier.cmr}\n\n')
         return output
 
     def _read_trace(self, trace: Trace):
@@ -58,9 +57,9 @@ class Simulation:
         else:
             sys.stdout = open(os.devnull, "w+")
         for line in trace.data:
-            tstart = int(line[1])
-            yield self._env.timeout(max(0, tstart - last_ts))  # traces are sorted by tstart order.
-            last_ts = tstart
+            t_start = int(line[1])
+            yield self._env.timeout(max(0, t_start - last_ts))  # traces are sorted by t_start order.
+            last_ts = t_start
             self._env.process(
                 trace.read_data_line(self._env, self._res, self._forwarder, line, self._log_file, self._logs_enabled))
 
