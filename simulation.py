@@ -1,3 +1,4 @@
+import json
 import math
 import simpy
 from simpy.core import Environment
@@ -26,26 +27,33 @@ class Simulation:
         t0 = time.time()
         self._env.run()
         print(f'Simulation finished after {round(time.time() - t0, 3)} seconds! Printing results:')
-        s = f'\n{" " * 4}>> '
-        output = ""
+        data = []
         for tier in self._forwarder.tiers:
-            output += (f'Tier "{tier.name}":'
-                       f'{s}Total size {math.trunc(tier.max_size * tier.target_occupation)} o '
-                       f'{s}Used size {tier.used_size} o '
-                       f'{s}Waisted size {tier.number_of_packets * self._forwarder.slot_size - tier.used_size} o '
-                       f'{s}{tier.number_of_prefetching_to_this_tier} prefetching to this tier'
-                       f'{s}{tier.number_of_prefetching_from_this_tier} prefetching from this tier'
-                       f'{s}{tier.number_of_eviction_to_this_tier} eviction to this tier'
-                       f'{s}{tier.number_of_eviction_from_this_tier} eviction from this tier'
-                       f'{s}{tier.number_of_write} total write'
-                       f'{s}{tier.number_of_reads} total reads'
-                       f'{s}Time spent reading {tier.time_spent_reading} ns'
-                       f'{s}Time spent writing {tier.time_spent_writing} ns'
-                       f'{s}High priority content retrieval time {tier.high_p_data_retrieval_time} ns'
-                       f'{s}Low priority content retrieval time {tier.low_p_data_retrieval_time} ns'
-                       f'{s}Cache hit number {tier.chr}'
-                       f'{s}Cache miss number {tier.cmr}\n\n')
-        return output
+            data.append({'tier_name': tier.name,
+                         'max_size': tier.max_size,
+                         'target_occupation': tier.target_occupation,
+                         'total_size': math.trunc(tier.max_size * tier.target_occupation),
+                         'used_size': tier.used_size,
+                         'waisted_size': tier.number_of_packets * self._forwarder.slot_size - tier.used_size,
+                         'number_of_packets': tier.number_of_packets,
+                         'number_of_prefetching_to_this_tier': tier.number_of_prefetching_to_this_tier,
+                         'number_of_prefetching_from_this_tier': tier.number_of_prefetching_from_this_tier,
+                         'number_of_eviction_to_this_tier': tier.number_of_eviction_to_this_tier,
+                         'number_of_eviction_from_this_tier': tier.number_of_eviction_from_this_tier,
+                         'number_of_write': tier.number_of_write,
+                         'number_of_reads': tier.number_of_reads,
+                         'time_spent_writing': tier.time_spent_writing,
+                         'time_spent_reading': tier.time_spent_reading,
+                         'high_p_data_retrieval_time': float(tier.high_p_data_retrieval_time),
+                         'low_p_data_retrieval_time': float(tier.low_p_data_retrieval_time),
+                         'chr': tier.chr,
+                         'cmr': tier.cmr,
+                         'chr_hpc': tier.chr_hpc,
+                         'chr_lpc': tier.chr_lpc
+                         })
+
+        json_object = json.dumps(data, indent=4)
+        return json_object
 
     def _read_trace(self, trace: Trace):
         last_ts = 0
