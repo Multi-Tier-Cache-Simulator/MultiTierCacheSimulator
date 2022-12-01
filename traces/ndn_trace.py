@@ -99,17 +99,25 @@ class NDNTrace(Trace):
             if not forwarder.pit.pit_has_name(name):
                 print("data already came")
                 return
-            if forwarder.pit.get_pit_entry(name) > env.now:
+            if forwarder.pit.get_pit_entry(name) < env.now:
                 print("pit for the data expired")
                 forwarder.pit.del_from_pit(name)
                 return
 
-            # write data to default-tier
-            print("write to default-tier")
-            tier = forwarder.get_default_tier()
-            tier.write_packet(env, res, packet)
             # delete pit entry
             forwarder.pit.del_from_pit(name)
+            if forwarder.index.cs_has_packet(name):
+                print("data already in cs")
+                tier = forwarder.index.get_packet_tier(name)
+                # if data not in default tier
+                if tier.name.__str__() != forwarder.get_default_tier().name.__str__():
+                    tier.prefetch_packet(packet)
+                    forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching")
+            else:
+                # write data to default-tier
+                print("write to default-tier")
+                tier = forwarder.get_default_tier()
+                tier.write_packet(env, res, packet)
         else:
             raise RuntimeError(f'Unknown operation code {type}')
 
