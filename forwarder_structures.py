@@ -10,78 +10,68 @@ class Deque(object):
     def __init__(self):
         self.od = OrderedDict()
 
-    def append_left(self, key, value):
-        if key in self.od:
-            del self.od[key]
-        self.od[key] = value
-
     def __str__(self):
         for key, value in self.od.items():
             print(value.size.__str__() + ", ", end="")
         print(" ")
 
-    def pop(self):
-        return self.od.popitem(0)[1]
-
-    def __get__(self, k):
-        return self.od[k]
-
-    def remove(self, k):
-        del self.od[k]
-
     def __len__(self):
         return len(self.od)
-
-    def __iter__(self):
-        return reversed(self.od)
 
     def __contains__(self, k):
         return k in self.od
 
-    def __repr__(self):
-        return 'Deque(%r)' % (list(self),)
+    def append_left(self, key, value):
+        if key in self.od:
+            del self.od[key]
+        self.od[key] = value
+
+    def pop(self):
+        return self.od.popitem(0)[1]
+
+    def remove(self, k):
+        del self.od[k]
 
 
 class Packet:
-    def __init__(self, packet_type, timestamp, name, size, priority):
-        self.packetType = packet_type
+    def __init__(self, data_back, timestamp, name, size, priority):
+        self.data_back = data_back
         self.name = name
         self.size = size
         self.priority = priority
         self.timestamp = timestamp
 
     def __str__(self):
-        print(
-            self.packetType.__str__() + ", " + self.name.__str__() + ", " + self.size.__str__() + ", " + self.priority)
+        print(self.data_back.__str__() + ", " + self.name.__str__() + ", " + self.size.__str__() + ", ")
 
 
 class PIT:
-
     def __init__(self):
-        self.pit = dict()  # key: packet_name, value: time
+        self.pit = dict()  # key: packet_name, value: expiration_time
 
     def __str__(self):
-        for key, value in self.pit.items():
-            print(key + ", " + value.__str__(), end=",")
+        for packet_name, expiration_time in self.pit.items():
+            print(packet_name + ":" + expiration_time.__str__(), end=", ")
         print(" ")
 
-    def pit_has_name(self, name: str):
-        if name in self.pit:
+    def pit_has_name(self, packet_name: str):
+        if packet_name in self.pit:
             return True
         else:
             return False
 
-    def get_pit_entry(self, name: str):
-        return self.pit[name]
+    def get_pit_entry(self, packet_name: str):
+        return self.pit[packet_name]
 
-    def add_to_pit(self, name: str, t: int):
-        self.pit[name] = t
+    def add_to_pit(self, packet_name: str, expiration_time: int):
+        self.pit[packet_name] = expiration_time
 
-    def del_from_pit(self, name: str):
-        self.pit.pop(name)
+    def del_from_pit(self, packet_name: str):
+        self.pit.pop(packet_name)
 
     def update_pit_times(self, env: Environment):
-        self.pit = {key: val for key, val in self.pit.items() if self.get_pit_entry(key) > env.now}
+        self.pit = {packet_name: expiration_time for packet_name, expiration_time in self.pit.items() if
+                    self.get_pit_entry(packet_name) > env.now}
 
 
 class Tier:
@@ -155,18 +145,11 @@ class Tier:
 
     def read_packet(self, env: Environment, res, packet):
         for listener in self.listeners:
-            print("//////////")
-            print("read packet")
             env.process(listener.on_packet_access(env, res, packet, False))
-            print("//////////")
 
     def write_packet(self, env: Environment, res, packet, cause=None):
         for listener in self.listeners:
-            print("//////////")
-            print("write packet")
             env.process(listener.on_packet_access(env, res, packet, True))
-            print("//////////")
-            # self.submission_queue.pop(0)
 
         if cause is not None:
             if cause == "eviction":
@@ -190,13 +173,13 @@ class Index:
     def __str__(self, what='index'):
         if what == 'index':
             print("index")
-            for packet_name, tier_name in self.active_index.items():
-                print(packet_name + ':' + tier_name, end=",")
+            for packet_name, tier in self.active_index.items():
+                print(packet_name + ':' + tier.name, end=", ")
             print(" ")
         else:
             print("ghost index")
             for packet_name, queue_name in self.ghost_index.items():
-                print(packet_name + ':' + queue_name, end=",")
+                print(packet_name + ':' + queue_name, end=", ")
             print(" ")
 
     # index
