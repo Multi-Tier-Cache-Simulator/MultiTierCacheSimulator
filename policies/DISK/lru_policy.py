@@ -12,7 +12,6 @@ class LRUPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
-        print('Queue size: %s' % len(res[1].queue))
         with res[1].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
@@ -29,13 +28,11 @@ class LRUPolicy(Policy):
                     self.tier.number_of_packets -= 1
                     self.tier.used_size -= old.size
 
-                print("writing " + packet.name + " to " + self.tier.name.__str__())
                 yield env.timeout(packet.size / self.tier.write_throughput)
                 self.tier.lru_dict[packet.name] = packet
-                self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
 
-                print('=========')
-                print("finished writing " + packet.name + " to " + self.tier.name.__str__())
+                # moves it at the end
+                self.tier.lru_dict.move_to_end(packet.name)
 
                 # index update
                 self.forwarder.index.update_packet_tier(packet.name, self.tier)
@@ -49,11 +46,10 @@ class LRUPolicy(Policy):
                 self.tier.number_of_write += 1
 
             else:
-                print("reading " + packet.name + " to " + self.tier.name.__str__())
                 yield env.timeout(packet.size / self.tier.read_throughput)
-                self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
-                print('=========')
-                print("finished reading " + packet.name + " to " + self.tier.name.__str__())
+
+                # moves it at the end
+                self.tier.lru_dict.move_to_end(packet.name)
 
                 # time
                 if packet.priority == 'l':

@@ -12,7 +12,6 @@ class DRAMLRUPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
-        print('Queue size: %s' % len(res[0].queue))
         with res[0].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, env.now))
@@ -44,11 +43,14 @@ class DRAMLRUPolicy(Policy):
                             print("drop packet" + old.name)
                     except:
                         print("no other tier")
+
                 yield env.timeout(
                     self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
+
                 self.tier.lru_dict[packet.name] = packet
-                self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
+
+                # moves it at the end
+                self.tier.lru_dict.move_to_end(packet.name)
 
                 # index update
                 self.forwarder.index.update_packet_tier(packet.name, self.tier)
@@ -63,7 +65,6 @@ class DRAMLRUPolicy(Policy):
 
             else:
                 yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                print('=========')
                 self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
 
                 # time

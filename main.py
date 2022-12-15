@@ -6,7 +6,7 @@ from plots.plot_creation import Plot
 from simulation import Simulation
 from traces.ndn_trace import NDNTrace
 from forwarder_structures import Tier, Forwarder, Index, PIT
-from policies.DRAM.arcpolicy import ARCPolicy
+from policies.DRAM.pppolicy import PPPolicy
 from policies.DRAM.dram_lru_policy import DRAMLRUPolicy
 from policies.DRAM.dram_lfu_cache import DRAMLFUPolicy
 from policies.DRAM.dram_random_policy import DRAMRandPolicy
@@ -27,7 +27,7 @@ slot_size = 8000
 # turn the trace into packets
 trace = NDNTrace()
 trace.gen_data()
-# trace.gen_data(trace_len_limit=2000)
+# trace.gen_data(trace_len_limit=200000)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -50,7 +50,7 @@ except:
 plot_content_store_config = []  # Content Store config str
 
 # available policies
-dramTierPolicies = [ARCPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
+dramTierPolicies = [PPPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
 diskTierPolicies = [LRUPolicy, LFUPolicy, RandPolicy]
 # dramTierPolicies = [ARCPolicy]
 # diskTierPolicies = [LRUPolicy]

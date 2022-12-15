@@ -14,7 +14,8 @@ class CSVTraceDistributions:
         self.distributions_folder = distributions_folder.replace('/', os.path.sep).replace("<timestamp>",
                                                                                            time.strftime(
                                                                                                "%a_%d_%b_%Y_%H-%M-%S",
-                                                                                               time.localtime()) + fileName)
+                                                                                               time.localtime()) +
+                                                                                           fileName)
 
         distributions_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), self.distributions_folder))
         try:
@@ -33,7 +34,7 @@ class CSVTraceDistributions:
         if trace_len_limit != -1:
             lines = lines[0:trace_len_limit]
 
-        numberOfPackets = OrderedDict()
+        number_of_packets = OrderedDict()
         i = 0
         h = 0
         for line in lines:
@@ -43,13 +44,13 @@ class CSVTraceDistributions:
             if diff < 1000000000:  # 1second
                 i += 1
             else:
-                numberOfPackets[round(int(line[1]) / 6e10, 0)] = i
+                number_of_packets[round(int(line[1]) / 6e10, 0)] = i
                 i = 0
 
-        first_key = next(iter(numberOfPackets))
-        last_key = next(reversed(numberOfPackets))
+        first_key = next(iter(number_of_packets))
+        last_key = next(reversed(number_of_packets))
 
-        for key, value in numberOfPackets.items():
+        for key, value in number_of_packets.items():
             plot_x.append(round((key - first_key) / (last_key - first_key), 3))
             plot_y.append(value)
 
@@ -72,8 +73,8 @@ class CSVTraceDistributions:
 
     def size_distribution(self, fileName: str, trace_len_limit=-1):
         # size
-        plot_dataSizes = []
-        plot_numberOfDataPackets = []
+        plot_data_sizes = []
+        plot_number_of_data_packets = []
 
         with open(fileName, encoding='utf8') as read_obj:
             csv_reader = csv.reader(read_obj, delimiter=',')
@@ -82,29 +83,29 @@ class CSVTraceDistributions:
         if trace_len_limit != -1:
             lines = lines[0:trace_len_limit]
 
-        dataLines = [line for line in lines if 'd' in line[0]]
-        dataSizes = OrderedDict()
-        min_size = int(dataLines[0][3])
-        max_size = int(dataLines[0][3])
-        for line in dataLines:
+        data_lines = [line for line in lines if 'd' in line[0]]
+        data_sizes = OrderedDict()
+        min_size = int(data_lines[0][3])
+        max_size = int(data_lines[0][3])
+        for line in data_lines:
             if max_size < int(line[3]):
                 max_size = int(line[3])
             if min_size > int(line[3]):
                 min_size = int(line[3])
-            if int(line[3]) in dataSizes.keys():
-                dataSizes[int(line[3])] = dataSizes[int(line[3])] + 1
+            if int(line[3]) in data_sizes.keys():
+                data_sizes[int(line[3])] = data_sizes[int(line[3])] + 1
             else:
-                dataSizes[int(line[3])] = 1
+                data_sizes[int(line[3])] = 1
 
-        for key, value in dataSizes.items():
-            plot_dataSizes.append(key)
-            plot_numberOfDataPackets.append(value)
+        for key, value in data_sizes.items():
+            plot_data_sizes.append(key)
+            plot_number_of_data_packets.append(value)
 
-        data_first_key = int(next(iter(dataLines))[1])
-        data_last_key = int(next(reversed(dataLines))[1])
+        data_first_key = int(next(iter(data_lines))[1])
+        data_last_key = int(next(reversed(data_lines))[1])
         data_period = round((data_last_key - data_first_key) / 6e10, 0)
         plt.figure()
-        plt.bar(plot_numberOfDataPackets, plot_dataSizes)
+        plt.bar(plot_number_of_data_packets, plot_data_sizes)
         plt.title('Number Of Data Packets per size for ' + data_period.__str__() + ' minutes')
         plt.xlabel("Size (o)")
         plt.ylabel("Number of packets")
@@ -114,7 +115,7 @@ class CSVTraceDistributions:
             print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
 
         df = pd.DataFrame(
-            data={'Number_Of_Data_Packets_per_size': plot_dataSizes}, index=plot_numberOfDataPackets)
+            data={'Number_Of_Data_Packets_per_size': plot_data_sizes}, index=plot_number_of_data_packets)
 
         df.plot.pie(y='Number_Of_Data_Packets_per_size', figsize=(5, 5))
 
@@ -139,28 +140,28 @@ class CSVTraceDistributions:
         diff = 0
         min_period = 0
         max_period = 0
-        min_reponse_time = 0
-        max_reponse_time = 0
-        averageReponseTime = 0
+        min_response_time = 0
+        max_response_time = 0
+        average_response_time = 0
 
         for line in lines:
             if xi_1 == 0:
                 min_period = int(line[1])
-                min_reponse_time = int(line[5])
+                min_response_time = int(line[5])
                 xi_1 = int(line[1])
             else:
                 diff += int(line[1]) - xi_1
-                averageReponseTime += int(line[5])
+                average_response_time += int(line[5])
 
                 if max_period < int(line[1]) - xi_1:
                     max_period = int(line[1]) - xi_1
                 if min_period > int(line[1]) - xi_1:
                     min_period = int(line[1]) - xi_1
 
-                if max_reponse_time < int(line[5]):
-                    max_reponse_time = int(line[5])
-                if min_reponse_time > int(line[5]):
-                    min_reponse_time = int(line[5])
+                if max_response_time < int(line[5]):
+                    max_response_time = int(line[5])
+                if min_response_time > int(line[5]):
+                    min_response_time = int(line[5])
 
                 xi_1 = int(line[1])
 
@@ -174,7 +175,7 @@ class CSVTraceDistributions:
         names = list(set(names))
         print("number of content = " + len(names).__str__())
         # response Time
-        art = averageReponseTime / len(lines)
+        art = average_response_time / len(lines)
         print("average response time = " + art.__str__())
-        print("minimum response time = " + min_reponse_time.__str__())
-        print("maximum response time = " + max_reponse_time.__str__())
+        print("minimum response time = " + min_response_time.__str__())
+        print("maximum response time = " + max_response_time.__str__())

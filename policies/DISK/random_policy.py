@@ -13,7 +13,6 @@ class RandPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
-        print('Queue size: %s' % len(res[1].queue))
         with res[1].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
@@ -31,12 +30,8 @@ class RandPolicy(Policy):
                     self.tier.number_of_packets -= 1
                     self.tier.used_size -= old.size
 
-                print("writing " + packet.name + " to " + self.tier.name.__str__())
                 yield env.timeout(packet.size / self.tier.write_throughput)
                 self.tier.random_struct[packet.name] = packet
-
-                print('=========')
-                print("finished writing " + packet.name + " to " + self.tier.name.__str__())
 
                 # index update
                 self.forwarder.index.update_packet_tier(packet.name, self.tier)
@@ -50,10 +45,7 @@ class RandPolicy(Policy):
                 self.tier.number_of_write += 1
 
             else:
-                print("reading " + packet.name + " to " + self.tier.name.__str__())
                 yield env.timeout(packet.size / self.tier.read_throughput)
-                print('=========')
-                print("finished reading " + packet.name + " to " + self.tier.name.__str__())
 
                 # time
                 if packet.priority == 'l':

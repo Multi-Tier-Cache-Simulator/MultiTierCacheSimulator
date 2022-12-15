@@ -31,12 +31,10 @@ class NDNTrace(Trace):
 
         # update the pit table entries by deleting the expired ones
         forwarder.pit.update_pit_times(env)
-
+        print('interest on ' + packet.name + ' arrives at ' + env.now.__str__())
         # cache hit
         if forwarder.index.cs_has_packet(name):
-            print("cache hit")
-            print('interest on ' + packet.name + ' arrives at ' + env.now.__str__())
-            print("read packet = " + name)
+            print("cache hit, read packet = " + name)
             tier = forwarder.index.get_packet_tier(name)
             # if data not in default tier
             if tier.name.__str__() != forwarder.get_default_tier().name.__str__():
@@ -56,7 +54,6 @@ class NDNTrace(Trace):
                 # read data from dram
                 print("read from dram")
                 forwarder.get_default_tier().read_packet(env, res, packet)
-                print("finished reading from dram in ndn_trace")
             else:
                 # read data from dram
                 print("read from dram")
@@ -78,7 +75,6 @@ class NDNTrace(Trace):
             return
 
         # cache miss and pit miss
-        print('interest on ' + packet.name + ' arrives at ' + env.now.__str__())
         print("cache miss, pit miss")
         forwarder.get_default_tier().cmr += 1
 
@@ -97,7 +93,7 @@ class NDNTrace(Trace):
             print("=========")
             print(packet.name + ', data arrives at ' + env.now.__str__())
             if not forwarder.pit.pit_has_name(name):
-                print("data already came")
+                print("interest expired or data already came")
                 return
             if forwarder.pit.get_pit_entry(name) < env.now:
                 print("pit for the data expired")

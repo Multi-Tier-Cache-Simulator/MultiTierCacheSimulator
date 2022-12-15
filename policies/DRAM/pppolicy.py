@@ -8,7 +8,7 @@ from simpy.core import Environment
 # time is in nanoseconds
 # size is in byte
 
-class ARCPolicy(Policy):
+class PPPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
         self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
@@ -26,7 +26,6 @@ class ARCPolicy(Policy):
                 len(self.tier.t1) > self.tier.p)):
             old = self.tier.t1.pop()
             print("move from t1 to b1 " + old.name)
-            # self.tier.b1.append_left(old.name, old)
 
             # index update
             self.forwarder.index.del_packet_from_cs(old.name)
@@ -39,7 +38,6 @@ class ARCPolicy(Policy):
         else:
             old = self.tier.t2.pop()
             print("move from t2 to b2 " + old.name)
-            # self.tier.b2.append_left(old.name, old)
 
             # index update
             self.forwarder.index.del_packet_from_cs(old.name)
@@ -71,7 +69,6 @@ class ARCPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
-        print('Queue size: %s' % len(res[0].queue))
         with res[0].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
@@ -87,8 +84,7 @@ class ARCPolicy(Policy):
             if not is_write and self.tier.t1.__contains__(packet.name):
                 # read
                 yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                print('=========')
-                print(packet.name + " cache hit in t1, move from t1 of t2")
+                print(packet.name + " cache hit in t1, move to t2")
                 if packet.priority == 'l':
                     self.tier.low_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
                 else:
@@ -99,7 +95,6 @@ class ARCPolicy(Policy):
 
                 # write
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
                 self.tier.t1.remove(packet.name)
                 self.tier.t2.append_left(packet.name, packet)
 
@@ -111,7 +106,6 @@ class ARCPolicy(Policy):
             if not is_write and self.tier.t2.__contains__(packet.name):
                 # read
                 yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                print('=========')
                 print(packet.name + " cache hit in t2, move from LRU to MRU of t2")
 
                 if packet.priority == 'l':
@@ -124,7 +118,6 @@ class ARCPolicy(Policy):
 
                 # write
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
                 self.tier.t2.remove(packet.name)
                 self.tier.t2.append_left(packet.name, packet)
 
@@ -143,14 +136,10 @@ class ARCPolicy(Policy):
             if self.forwarder.index.packet_in_queue(packet.name, 'b1'):
                 # write data
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
-                print(packet.name + " found in b1, move from b1 to t2")
-                # self.tier.p = min(self.nb_packets_capacity, self.tier.p + max(len(self.tier.b2) / len(
-                # self.tier.b1), 1))
+                print(packet.name + " found in b1, move to t2")
                 self.tier.p = min(self.nb_packets_capacity, self.tier.p + max(
                     self.forwarder.index.queue_len('b2') / self.forwarder.index.queue_len('b1'), 1))
                 self._replace(env, res, packet)
-                # self.tier.b1.remove(packet.name)
 
                 self.forwarder.index.del_packet_from_queues(packet.name)
                 self.tier.t2.append_left(packet.name, packet)
@@ -176,18 +165,18 @@ class ARCPolicy(Policy):
             if self.forwarder.index.packet_in_queue(packet.name, 'b2'):
                 # time
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
-                print(packet.name + " found in b2, move from b2 to t2")
+                print(packet.name + " found in b2, move to t2")
                 self.tier.p = max(0, self.tier.p - max(
                     self.forwarder.index.queue_len('b1') / self.forwarder.index.queue_len('b2'), 1))
+
                 self._replace(env, res, packet)
-                # self.tier.b2.remove(packet.name)
-                self.forwarder.index.del_packet_from_queues(packet.name)
+
                 self.tier.t2.append_left(packet.name, packet)
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
                 # index update
                 self.forwarder.index.update_packet_tier(packet.name, self.tier)
+                self.forwarder.index.del_packet_from_queues(packet.name)
 
                 # write data
                 self.tier.number_of_packets += 1
@@ -203,7 +192,6 @@ class ARCPolicy(Policy):
                 # Case A: L1 (T1 u B1) has exactly c pages.
                 if len(self.tier.t1) < self.nb_packets_capacity:
                     print("remove LRU page in b1")
-                    # self.tier.b1.pop()
                     self.forwarder.index.pop_packet_from_queue('b1')
                     self._replace(env, res, packet)
                 else:
@@ -228,7 +216,6 @@ class ARCPolicy(Policy):
                     # Delete LRU page in B2, if |T1| + |T2| + |B1| + |B2| == 2c
                     if total == (2 * self.nb_packets_capacity):
                         print("Delete LRU page in b2, if |T1| + |T2| + |B1| + |B2| == 2c")
-                        # self.tier.b2.pop()
                         self.forwarder.index.pop_packet_from_queue('b2')
 
                     # REPLACE(x, p)
@@ -236,8 +223,7 @@ class ARCPolicy(Policy):
 
             # time
             yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-            print('=========')
-            print(packet.name + " write in t")
+            print(packet.name + " write in t1")
             # Finally, fetch x to the cache and move it to MRU position in T1
             self.tier.t1.append_left(packet.name, packet)
             self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput

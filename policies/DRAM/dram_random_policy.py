@@ -13,7 +13,6 @@ class DRAMRandPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
-        print('Queue size: %s' % len(res[0].queue))
         with res[0].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
@@ -47,7 +46,6 @@ class DRAMRandPolicy(Policy):
                         print("no other tier")
                 yield env.timeout(
                     self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
                 self.tier.random_struct[packet.name] = packet
 
                 # index update
@@ -63,8 +61,6 @@ class DRAMRandPolicy(Policy):
 
             else:
                 yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                print('=========')
-
                 # time
                 if packet.priority == 'l':
                     self.tier.low_p_data_retrieval_time += Decimal(env.now) - packet.timestamp

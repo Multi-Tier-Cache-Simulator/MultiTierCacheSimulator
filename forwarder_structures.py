@@ -51,10 +51,12 @@ class Packet:
         self.timestamp = timestamp
 
     def __str__(self):
-        print(self.packetType.__str__() + ", " + self.name.__str__() + ", " + self.size.__str__() + ", ")
+        print(
+            self.packetType.__str__() + ", " + self.name.__str__() + ", " + self.size.__str__() + ", " + self.priority)
 
 
 class PIT:
+
     def __init__(self):
         self.pit = dict()  # key: packet_name, value: time
 

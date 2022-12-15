@@ -12,7 +12,6 @@ class DRAMLFUPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
-        print('Queue size: %s' % len(res[0].queue))
         with res[0].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
@@ -23,7 +22,6 @@ class DRAMLFUPolicy(Policy):
 
                 if packet.name in self.tier.keyToVal:
                     yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                    print('=========')
                     curr_freq = self.tier.keyToFreq[packet.name]
                     self.tier.freqToKey[curr_freq].pop(packet.name)
                     self.tier.freqToKey[curr_freq + 1][packet.name] = None
@@ -65,7 +63,6 @@ class DRAMLFUPolicy(Policy):
                             print("no other tier")
 
                     yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                    print('=========')
                     self.tier.freqToKey[1][packet.name] = None
                     self.tier.keyToFreq[packet.name] = 1
                     self.tier.keyToVal[packet.name] = packet
@@ -84,9 +81,7 @@ class DRAMLFUPolicy(Policy):
             else:
                 yield env.timeout(
                     self.tier.latency + packet.size / self.tier.read_throughput)
-                print('=========')
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                print('=========')
                 curr_freq = self.tier.keyToFreq[packet.name]
                 self.tier.freqToKey[curr_freq].pop(packet.name)
                 self.tier.freqToKey[curr_freq + 1][packet.name] = None
