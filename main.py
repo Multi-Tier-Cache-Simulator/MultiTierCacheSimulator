@@ -5,7 +5,10 @@ import simpy
 from plots.plot_creation import Plot
 from simulation import Simulation
 from traces.ndn_trace import NDNTrace
-from forwarder_structures import Tier, Forwarder, Index, PIT
+from forwarder_structures.pit import PIT
+from forwarder_structures.tier import Tier
+from forwarder_structures.index import Index
+from forwarder import Forwarder
 from policies.DRAM.pppolicy import PPPolicy
 from policies.DRAM.dram_lru_policy import DRAMLRUPolicy
 from policies.DRAM.dram_lfu_cache import DRAMLFUPolicy
@@ -49,54 +52,63 @@ except:
 # CS config
 plot_content_store_config = []  # Content Store config str
 
+# total size 1000kB
+total_size = 1000000
+
+# proportions
+size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
+
 # available policies
 dramTierPolicies = [PPPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
 diskTierPolicies = [LRUPolicy, LFUPolicy, RandPolicy]
 # dramTierPolicies = [ARCPolicy]
 # diskTierPolicies = [LRUPolicy]
-# 2 tiers
-for dramPolicy in dramTierPolicies:
-    for diskPolicy in diskTierPolicies:
-        name = dramPolicy.__name__ + "+" + diskPolicy.__name__
-        name = name.replace('Policy', '')
-        name = name.replace('DRAM', '')
-        print("=====================================")
-        print(name)
-        # Init simpy env
-        env = simpy.Environment()
-        # create the index
-        index = Index()
-        # Create the Content Store tiers
-        # dram: max_size=100kB, latency = 100ns, read_throughput = 40GBPS, write_throughput = 20GBPS
-        dram = Tier(name="DRAM", max_size=100000, granularity=1, latency=100, read_throughput=40,
-                    write_throughput=20, target_occupation=0.6)
-        # nvme: max_size=1000kB, latency = 10000ns, read_throughput = 3GBPS = 3Byte Per Nano Second
-        # write_throughput = 1GBPS = 1Byte Per Nano Second
-        nvme = Tier(name="NVMe", max_size=1000000, granularity=512, latency=10000, read_throughput=3,
-                    write_throughput=1, target_occupation=1.0)
-        tiers = [dram, nvme]
-        # Create the PIT
-        pit = PIT()
-        # Create the forwarder
-        forwarder = Forwarder(env, index, tiers, pit, slot_size)
-        # Assign the policies
-        dramPolicy(env, forwarder, dram)
-        diskPolicy(env, forwarder, nvme)
 
-        latest_filename = "latest" + name + ".log"
-        sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
-                         logs_enabled=True)
-        print("Starting simulation")
-        last_results_filename = "json_data" + name + ".txt"
-        last_results = sim.run()
 
-        try:
-            with open(os.path.join(output_folder, last_results_filename), "a") as f:
-                f.write(last_results)
-        except:
-            print(f'Error trying to write last_results into a new file in output folder "{output_folder}"')
+for i in size_proportion:
+    for dramPolicy in dramTierPolicies:
+        for diskPolicy in diskTierPolicies:
+            name = dramPolicy.__name__ + "+" + diskPolicy.__name__
+            name = name.replace('Policy', '')
+            name = name.replace('DRAM', '')
+            name = name + "_" + i.__str__()
+            print("=====================================")
+            print(name)
+            # Init simpy env
+            env = simpy.Environment()
+            # create the index
+            index = Index()
+            # Create the Content Store tiers
+            # dram: max_size=100kB, latency = 100ns, read_throughput = 40GBPS, write_throughput = 20GBPS
+            dram = Tier(name="DRAM", max_size=100000, granularity=1, latency=100, read_throughput=40,
+                        write_throughput=20, target_occupation=0.6)
+            # nvme: max_size=1000kB, latency = 10000ns, read_throughput = 3GBPS = 3Byte Per Nano Second
+            # write_throughput = 1GBPS = 1Byte Per Nano Second
+            nvme = Tier(name="NVMe", max_size=1000000, granularity=512, latency=10000, read_throughput=3,
+                        write_throughput=1, target_occupation=1.0)
+            tiers = [dram, nvme]
+            # Create the PIT
+            pit = PIT()
+            # Create the forwarder
+            forwarder = Forwarder(env, index, tiers, pit, slot_size)
+            # Assign the policies
+            dramPolicy(env, forwarder, dram)
+            diskPolicy(env, forwarder, nvme)
 
-        # CS config
-        plot_content_store_config.append(name)
+            latest_filename = "latest" + name + ".log"
+            sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
+                             logs_enabled=True)
+            print("Starting simulation")
+            last_results_filename = "json_data" + name + ".txt"
+            last_results = sim.run()
+
+            try:
+                with open(os.path.join(output_folder, last_results_filename), "a") as f:
+                    f.write(last_results)
+            except:
+                print(f'Error trying to write last_results into a new file in output folder "{output_folder}"')
+
+            # CS config
+            plot_content_store_config.append(name)
 
 Plot(output_folder, plot_content_store_config, slot_size, nb_interests, nb_high_priority, nb_low_priority)

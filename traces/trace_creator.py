@@ -2,8 +2,8 @@ import csv
 import numpy as np
 import time
 from numpy import random
-from forwarder_structures import Packet
-import common.Zipf as Zip
+from common.packet import Packet
+import common.zipf as Zip
 
 # time is in nanosecond
 # size is in byte

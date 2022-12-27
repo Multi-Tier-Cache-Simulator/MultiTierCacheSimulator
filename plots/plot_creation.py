@@ -42,20 +42,19 @@ class Plot:
         plot_number_write_disk = []  # number of write
         plot_high_p_data_retrieval_time_disk = []  # high priority data retrieval time
         plot_low_p_data_retrieval_time_disk = []  # low priority data retrieval time
-
         # change directory to json files
         os.chdir(output_folder)
-        results = list()
+        result = list()
         for file in os.listdir():
             # Check whether file is in text format or not
             if file.endswith(".txt"):
                 file_path = f"{output_folder}\{file}"
                 print(file_path)
                 with open(file_path, 'r') as f:
-                    results.extend(json.load(f))
-        print(results)
+                    result.extend(json.load(f))
+        print(result)
 
-        for line in results:
+        for line in result:
             if line['tier_name'] == 'DRAM':
                 # chr
                 plot_cache_hit_ratio_ram.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_ram.append(

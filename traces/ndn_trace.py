@@ -1,6 +1,6 @@
 import csv
 from resources import NDN_PACKETS
-from forwarder_structures import Packet
+from common.packet import Packet
 from traces.trace import Trace
 
 
@@ -31,7 +31,7 @@ class NDNTrace(Trace):
 
         # update the pit table entries by deleting the expired ones
         forwarder.pit.update_pit_times(env)
-        print('interest on ' + packet.name + ' arrives at ' + env.now.__str__())
+        print('interest on ' + name + ' arrives at ' + env.now.__str__())
         # cache hit
         if forwarder.index.cs_has_packet(name):
             print("cache hit, read packet = " + name)
@@ -47,7 +47,7 @@ class NDNTrace(Trace):
                     if priority == 'l':
                         tier.chr_lpc += 1
 
-                print("Prefetch data to default tier " + forwarder.get_default_tier().name.__str__())
+                print("prefetch data to default tier " + forwarder.get_default_tier().name.__str__())
                 tier.prefetch_packet(packet)
                 forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching")
 
@@ -91,15 +91,14 @@ class NDNTrace(Trace):
             print("data is on its way")
             yield env.timeout(response_time)
             print("=========")
-            print(packet.name + ', data arrives at ' + env.now.__str__())
+            print(name + ', data arrives at ' + env.now.__str__())
             if not forwarder.pit.pit_has_name(name):
-                print("interest expired or data already came")
+                print("data already came")
                 return
             if forwarder.pit.get_pit_entry(name) < env.now:
                 print("pit for the data expired")
                 forwarder.pit.del_from_pit(name)
                 return
-
             # delete pit entry
             forwarder.pit.del_from_pit(name)
             if forwarder.index.cs_has_packet(name):
@@ -114,6 +113,7 @@ class NDNTrace(Trace):
                 print("write to default-tier")
                 tier = forwarder.get_default_tier()
                 tier.write_packet(env, res, packet)
+
         else:
             raise RuntimeError(f'Unknown operation code {type}')
 

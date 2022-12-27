@@ -3,7 +3,7 @@ import math
 import simpy
 from simpy.core import Environment
 from traces.trace import Trace
-from forwarder_structures import Forwarder
+from forwarder import Forwarder
 import sys
 import os
 import time

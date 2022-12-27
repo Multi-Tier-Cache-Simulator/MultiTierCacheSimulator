@@ -1,7 +1,9 @@
 import math
 from decimal import Decimal
 from policies.policy import Policy
-from forwarder_structures import Forwarder, Tier, Packet
+from common.packet import Packet
+from forwarder_structures.tier import Tier
+from forwarder import Forwarder
 from simpy.core import Environment
 
 
@@ -15,6 +17,9 @@ class LRUPolicy(Policy):
         with res[1].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, Decimal(env.now)))
+            # print('Queue size: %s' % len(res[1].queue))
+            # print(self.forwarder.index.__str__())
+            # print(self.forwarder.index.__str__(what='queues'))
             if is_write:
                 if len(self.tier.lru_dict) > self.nb_packets_capacity:
                     old, name = reversed(self.tier.lru_dict.popitem())
@@ -30,9 +35,7 @@ class LRUPolicy(Policy):
 
                 yield env.timeout(packet.size / self.tier.write_throughput)
                 self.tier.lru_dict[packet.name] = packet
-
-                # moves it at the end
-                self.tier.lru_dict.move_to_end(packet.name)
+                self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
 
                 # index update
                 self.forwarder.index.update_packet_tier(packet.name, self.tier)
@@ -47,9 +50,7 @@ class LRUPolicy(Policy):
 
             else:
                 yield env.timeout(packet.size / self.tier.read_throughput)
-
-                # moves it at the end
-                self.tier.lru_dict.move_to_end(packet.name)
+                self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
 
                 # time
                 if packet.priority == 'l':
