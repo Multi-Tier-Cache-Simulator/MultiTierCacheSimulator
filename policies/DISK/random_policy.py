@@ -3,7 +3,7 @@ import random
 from decimal import Decimal
 from policies.policy import Policy
 from common.packet import Packet
-from forwarder_structures.tier import Tier
+from forwarder_structures.content_store.tier import Tier
 from forwarder import Forwarder
 from simpy.core import Environment
 

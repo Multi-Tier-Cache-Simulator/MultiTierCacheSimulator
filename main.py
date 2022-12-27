@@ -6,8 +6,8 @@ from plots.plot_creation import Plot
 from simulation import Simulation
 from traces.ndn_trace import NDNTrace
 from forwarder_structures.pit import PIT
-from forwarder_structures.tier import Tier
-from forwarder_structures.index import Index
+from forwarder_structures.content_store.tier import Tier
+from forwarder_structures.content_store.index import Index
 from forwarder import Forwarder
 from policies.DRAM.pppolicy import PPPolicy
 from policies.DRAM.dram_lru_policy import DRAMLRUPolicy

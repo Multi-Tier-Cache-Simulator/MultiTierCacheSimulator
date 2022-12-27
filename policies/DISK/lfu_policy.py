@@ -2,7 +2,7 @@ import math
 from decimal import Decimal
 from simpy import Environment
 from common.packet import Packet
-from forwarder_structures.tier import Tier
+from forwarder_structures.content_store.tier import Tier
 from forwarder import Forwarder
 from policies.policy import Policy
 
