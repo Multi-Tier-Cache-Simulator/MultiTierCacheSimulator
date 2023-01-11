@@ -86,11 +86,11 @@ def zip_f_opt(alpha, store_size):
     # Map z to the value
     for i in range(1, store_size + 1):
         if zip_f.probInterval[i - 1] >= z:
-            zip_f_value = i
+            zip_f.zip_f_value = i
             break
 
-    assert 1 <= zip_f_value <= store_size
-    return zip_f_value
+    assert 1 <= zip_f.zip_f_value <= store_size
+    return zip_f.zip_f_value
 
 
 # # Test the code

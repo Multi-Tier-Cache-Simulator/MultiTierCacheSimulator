@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 
 class Plot:
-    def __init__(self, output_folder, plot_content_store_config, slot_size, nb_interests, nb_high_priority,
+    def __init__(self, output_folder, slot_size, nb_interests, nb_high_priority,
                  nb_low_priority):
         # figure files
         figure_folder = "figures/<timestamp>"
@@ -21,6 +21,8 @@ class Plot:
             print(f'Error trying to create output folder "{figure_folder}"')
 
         # plots
+        plot_content_store_config = []
+
         # ram
         plot_cache_hit_ratio_ram = []  # chr
         plot_cache_hit_ratio_hpc_ram = []  # chr high priority content
@@ -48,11 +50,11 @@ class Plot:
         for file in os.listdir():
             # Check whether file is in text format or not
             if file.endswith(".txt"):
-                file_path = f"{output_folder}\{file}"
-                print(file_path)
+                name = file[:file.__len__()-4]
+                file_path = f"{output_folder}/{file}"
                 with open(file_path, 'r') as f:
+                    plot_content_store_config.append(name)
                     result.extend(json.load(f))
-        print(result)
 
         for line in result:
             if line['tier_name'] == 'DRAM':

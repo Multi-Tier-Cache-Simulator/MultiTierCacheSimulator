@@ -28,6 +28,8 @@ class TraceCreator:
         :param interest_lifetime: interest life time in ns
         :param traffic_period: end - start timestamps of the trace in minutes
         """""
+        start_time = time.time()
+        print("Start creating the trace at: " + start_time.__str__())
 
         # generate a catalog of items. Assign each item a size
         unique_words = dict()
@@ -51,11 +53,12 @@ class TraceCreator:
 
         # generate current timestamp in nanoseconds
         t = int(round(time.time_ns(), 0))
+        print("Finished generation unique packets at: ", time.time().__str__())
 
         # run for traffic_period minutes
         end = t + traffic_period * 60000000000
 
-        with open('resources/dataset_ndn/synthetic-trace-' + zipf_alpha.__str__() + '.csv', 'w', encoding="utf-8",
+        with open('resources/dataset_ndn/synthetic-trace-' + n_unique_items.__str__() + "_" + zipf_alpha.__str__() +  "_" + high_priority_content_percentage.__str__() +'.csv', 'w', encoding="utf-8",
                   newline='') as f:
             writer = csv.writer(f)
             while t < end:
@@ -81,3 +84,8 @@ class TraceCreator:
                           interest_lifetime, response_time]
                     writer.writerow(ld)
                 t += int(round(random.exponential(poisson_lambda) * 10e6, 0))
+        creation_time = time.time() - start_time
+        with open('resources/dataset_ndn/synthetic-trace-' + time.time().__str__() + "_" + n_unique_items.__str__() + "_" + zipf_alpha.__str__() +  "_" + high_priority_content_percentage.__str__() +'.csv', 'w', encoding="utf-8",
+                  newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow("Trace creation took: " + creation_time.__str__())

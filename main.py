@@ -1,3 +1,4 @@
+
 import sys
 import os
 import time
@@ -30,7 +31,7 @@ slot_size = 8000
 # turn the trace into packets
 trace = NDNTrace()
 trace.gen_data()
-# trace.gen_data(trace_len_limit=200000)
+# trace.gen_data(trace_len_limit=200)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -49,20 +50,20 @@ try:
 except:
     print(f'Error trying to create output folder "{output_folder}"')
 
-# CS config
-plot_content_store_config = []  # Content Store config str
 
 # total size 1000kB
 total_size = 1000000
 
 # proportions
-size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
+# size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
+size_proportion = [2 / 10]
+
 
 # available policies
 dramTierPolicies = [PPPolicy, DRAMLRUPolicy, DRAMLFUPolicy, DRAMRandPolicy]
 diskTierPolicies = [LRUPolicy, LFUPolicy, RandPolicy]
-# dramTierPolicies = [ARCPolicy]
-# diskTierPolicies = [LRUPolicy]
+# dramTierPolicies = [PPPolicy]
+# diskTierPolicies = [LFUPolicy]
 
 
 for i in size_proportion:
@@ -80,11 +81,11 @@ for i in size_proportion:
             index = Index()
             # Create the Content Store tiers
             # dram: max_size=100kB, latency = 100ns, read_throughput = 40GBPS, write_throughput = 20GBPS
-            dram = Tier(name="DRAM", max_size=100000, granularity=1, latency=100, read_throughput=40,
+            dram = Tier(name="DRAM", max_size=total_size*i, granularity=1, latency=100, read_throughput=40,
                         write_throughput=20, target_occupation=0.6)
             # nvme: max_size=1000kB, latency = 10000ns, read_throughput = 3GBPS = 3Byte Per Nano Second
             # write_throughput = 1GBPS = 1Byte Per Nano Second
-            nvme = Tier(name="NVMe", max_size=1000000, granularity=512, latency=10000, read_throughput=3,
+            nvme = Tier(name="NVMe", max_size=total_size - total_size*i, granularity=512, latency=10000, read_throughput=3,
                         write_throughput=1, target_occupation=1.0)
             tiers = [dram, nvme]
             # Create the PIT
@@ -97,9 +98,9 @@ for i in size_proportion:
 
             latest_filename = "latest" + name + ".log"
             sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
-                             logs_enabled=True)
+                             logs_enabled=False)
             print("Starting simulation")
-            last_results_filename = "json_data" + name + ".txt"
+            last_results_filename = name + ".txt"
             last_results = sim.run()
 
             try:
@@ -108,7 +109,5 @@ for i in size_proportion:
             except:
                 print(f'Error trying to write last_results into a new file in output folder "{output_folder}"')
 
-            # CS config
-            plot_content_store_config.append(name)
 
-Plot(output_folder, plot_content_store_config, slot_size, nb_interests, nb_high_priority, nb_low_priority)
+Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)

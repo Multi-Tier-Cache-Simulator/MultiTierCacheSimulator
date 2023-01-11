@@ -1,4 +1,4 @@
-from tier import Tier
+from forwarder_structures.content_store.tier import Tier
 
 
 class Index:
