@@ -3,7 +3,8 @@ import numpy as np
 import time
 from numpy import random
 from common.packet import Packet
-import common.zipf as Zip
+from common.zipf import zip_f
+
 
 # time is in nanosecond
 # size is in byte
@@ -48,7 +49,7 @@ class TraceCreator:
             if n_hpc_created >= n_hpc:
                 priority = 'l'
                 n_hpc_created -= 1
-            packet = Packet("d", 0, i, size, priority)
+            packet = Packet("d", 0, i.__str__(), size, priority)
             unique_words[i] = packet
 
         # generate current timestamp in nanoseconds
@@ -58,14 +59,16 @@ class TraceCreator:
         # run for traffic_period minutes
         end = t + traffic_period * 60000000000
 
-        with open('resources/dataset_ndn/synthetic-trace-' + n_unique_items.__str__() + "_" + zipf_alpha.__str__() +  "_" + high_priority_content_percentage.__str__() +'.csv', 'w', encoding="utf-8",
+        with open('resources/dataset_ndn/synthetic-trace-' + poisson_lambda.__str__() + "_" + n_unique_items.__str__()
+                  + "_" + zipf_alpha.__str__() + "_" + high_priority_content_percentage.__str__()
+                  + '.csv', 'w', encoding="utf-8",
                   newline='') as f:
             writer = csv.writer(f)
             while t < end:
                 # create requests on the words following a Zipf law
-                index = Zip.zip_f2(zipf_alpha, len(unique_words))
+                index = zip_f(zipf_alpha, len(unique_words))
                 while index >= len(unique_words):
-                    index =Zip.zip_f2(zipf_alpha, len(unique_words))
+                    index = zip_f(zipf_alpha, len(unique_words))
                 # index = np.random.zipf(zipf_alpha)
                 # while index >= len(unique_words):
                 #     index = np.random.zipf(zipf_alpha)
@@ -85,7 +88,11 @@ class TraceCreator:
                     writer.writerow(ld)
                 t += int(round(random.exponential(poisson_lambda) * 10e6, 0))
         creation_time = time.time() - start_time
-        with open('resources/dataset_ndn/synthetic-trace-' + time.time().__str__() + "_" + n_unique_items.__str__() + "_" + zipf_alpha.__str__() +  "_" + high_priority_content_percentage.__str__() +'.csv', 'w', encoding="utf-8",
-                  newline='') as f:
+        print("Finished creating the trace at: " + time.time().__str__())
+        with open(
+                'resources/dataset_ndn/synthetic-trace-' + time.time().__str__() + "_" + n_unique_items.__str__()
+                + "_" + zipf_alpha.__str__() + "_" + high_priority_content_percentage.__str__() + '.csv',
+                'w', encoding="utf-8",
+                newline='') as f:
             writer = csv.writer(f)
             writer.writerow("Trace creation took: " + creation_time.__str__())

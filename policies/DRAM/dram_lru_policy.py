@@ -1,5 +1,5 @@
 import math
-from decimal import Decimal
+from collections import OrderedDict
 from policies.policy import Policy
 from common.packet import Packet
 from forwarder_structures.content_store.tier import Tier
@@ -10,18 +10,20 @@ from simpy.core import Environment
 class DRAMLRUPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
-        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
+        self.name = "DRAM_LRU"
+        self.nb_packets_capacity = 3
+        # self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
+        self.lru_dict = OrderedDict()
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
-        print('%s arriving at %s' % (self.tier.name, Decimal(env.now)))
+        print('%s arriving for packet %s at %s' % (self.tier.name, packet.name, env.now))
+        print(res[0].queue)
         with res[0].request() as req:
             yield req
-            print('%s starting at %s' % (self.tier.name, env.now))
+            print('%s starting for packet %s at %s' % (self.tier.name, packet.name, env.now))
             if is_write:
-                # free space if capacity full
-                if len(self.tier.lru_dict) > self.nb_packets_capacity:
-                    old, name = reversed(self.tier.lru_dict.popitem())
-                    print(name + " evicted from " + self.tier.name)
+                if len(self.lru_dict) >= self.nb_packets_capacity:
+                    name, old = self.lru_dict.popitem(last=False)
 
                     # index update
                     self.forwarder.index.del_packet_from_cs(name)
@@ -36,7 +38,7 @@ class DRAMLRUPolicy(Policy):
                         target_tier_id = self.forwarder.tiers.index(self.tier) + 1
 
                         # data is important or Disk is free
-                        if len(res[1].queue) != self.forwarder.tiers[target_tier_id].submission_queue_max_size:
+                        if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                             print("move data to disk " + name)
                             self.forwarder.tiers[target_tier_id].write_packet(env, res, old, cause='eviction')
 
@@ -46,37 +48,46 @@ class DRAMLRUPolicy(Policy):
                     except:
                         print("no other tier")
 
-                yield env.timeout(
-                    self.tier.latency + packet.size / self.tier.write_throughput)
+                yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
 
-                self.tier.lru_dict[packet.name] = packet
-
-                # moves it at the end
-                self.tier.lru_dict.move_to_end(packet.name)
+                self.lru_dict[packet.name] = packet
 
                 # index update
                 self.forwarder.index.update_packet_tier(packet.name, self.tier)
 
-                # time
+                # update time spent writing
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
-                # write data
+                # increment number of writes
                 self.tier.used_size += packet.size
                 self.tier.number_of_packets += 1
                 self.tier.number_of_write += 1
-
             else:
-                yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                self.tier.lru_dict.move_to_end(packet.name)  # moves it at the end
+                if packet.name in self.lru_dict:
+                    yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
 
-                # time
-                if packet.priority == 'l':
-                    self.tier.low_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+                    # update time spent reading
+                    if packet.priority == 'l':
+                        self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
+                    else:
+                        self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
+
+                    self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+
+                    # increment number of reads
+                    self.tier.number_of_reads += 1
+
+                    # update time spent writing
+                    self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
+                    yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
+
+                    self.lru_dict.move_to_end(packet.name)  # moves it at the end
+
+                    # increment number of writes
+                    self.tier.number_of_write += 1
                 else:
-                    self.tier.high_p_data_retrieval_time += Decimal(env.now) - packet.timestamp
+                    raise ValueError(f"Key {packet.name} not found in cache.")
 
-                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
-
-                # read a data
-                self.tier.number_of_reads += 1
-            print('%s leaving the resource at %s' % (self.tier.name, Decimal(env.now)))
+            res[0].release(req)
+            print('%s leaving the resource for packet %s at %s' % (self.tier.name, packet.name, env.now))

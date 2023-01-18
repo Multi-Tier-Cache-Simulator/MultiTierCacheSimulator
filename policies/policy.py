@@ -9,4 +9,4 @@ class Policy:
         self.env = env
         self.forwarder = forwarder
         self.tier = tier
-        tier.register_listener(self)
+        tier.register_strategy(self)

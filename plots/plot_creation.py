@@ -50,7 +50,7 @@ class Plot:
         for file in os.listdir():
             # Check whether file is in text format or not
             if file.endswith(".txt"):
-                name = file[:file.__len__()-4]
+                name = file[:file.__len__() - 4]
                 file_path = f"{output_folder}/{file}"
                 with open(file_path, 'r') as f:
                     plot_content_store_config.append(name)
@@ -61,59 +61,75 @@ class Plot:
                 # chr
                 plot_cache_hit_ratio_ram.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_ram.append(
                     line['chr'] / nb_interests)
+
                 # chr high priority content
                 plot_cache_hit_ratio_hpc_ram.append(
                     0.0) if nb_high_priority == 0 else plot_cache_hit_ratio_hpc_ram.append(
                     line['chr_hpc'] / nb_high_priority)
+
                 # chr low priority content
                 plot_cache_hit_ratio_lpc_ram.append(
                     0.0) if nb_low_priority == 0 else plot_cache_hit_ratio_lpc_ram.append(
                     line['chr_lpc'] / nb_low_priority)
+
                 # used size
                 plot_used_size_ram.append(line['used_size'] / (line['max_size'] * line['target_occupation']))
+
                 # waisted size
                 plot_waisted_size_ram.append(
                     (line['number_of_packets'] * slot_size - line['used_size']) / (
                             line['max_size'] * line['target_occupation']))
+
                 # number of read
                 plot_number_read_ram.append(line['number_of_reads'])
+
                 # number of write
                 plot_number_write_ram.append(line['number_of_write'])
+
                 # average high priority data retrieval time
                 plot_high_p_data_retrieval_time_ram.append(
                     0.0) if nb_high_priority == 0 else plot_high_p_data_retrieval_time_ram.append(
                     line['high_p_data_retrieval_time'] / nb_high_priority)
+
                 # average low priority data retrieval time
                 plot_low_p_data_retrieval_time_ram.append(
                     0.0) if nb_low_priority == 0 else plot_low_p_data_retrieval_time_ram.append(
                     line['low_p_data_retrieval_time'] / nb_low_priority)
+
             if line['tier_name'] == 'NVMe':
-                # disk
                 # chr
                 plot_cache_hit_ratio_disk.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_disk.append(
                     line['chr'] / nb_interests)
+
                 # chr high priority content
                 plot_cache_hit_ratio_hpc_disk.append(
                     0.0) if nb_high_priority == 0 else plot_cache_hit_ratio_hpc_disk.append(
                     line['chr_hpc'] / nb_high_priority)
+
                 # chr low priority content
                 plot_cache_hit_ratio_lpc_disk.append(
                     0.0) if nb_low_priority == 0 else plot_cache_hit_ratio_lpc_disk.append(
                     line['chr_lpc'] / nb_low_priority)
+
                 # used size
                 plot_used_size_disk.append(line['used_size'] / (line['max_size'] * line['target_occupation']))
+
                 # waisted size
                 plot_waisted_size_disk.append(
                     (line['number_of_packets'] * slot_size - line['used_size']) / (
                             line['max_size'] * line['target_occupation']))
+
                 # number of read
                 plot_number_read_disk.append(line['number_of_reads'])
+
                 # number of write
                 plot_number_write_disk.append(line['number_of_write'])
+
                 # average high priority data retrieval time
                 plot_high_p_data_retrieval_time_disk.append(
                     0.0) if nb_high_priority == 0 else plot_high_p_data_retrieval_time_disk.append(
                     line['high_p_data_retrieval_time'] / nb_high_priority)
+
                 # average low priority data retrieval time
                 plot_low_p_data_retrieval_time_disk.append(
                     0.0) if nb_low_priority == 0 else plot_low_p_data_retrieval_time_disk.append(

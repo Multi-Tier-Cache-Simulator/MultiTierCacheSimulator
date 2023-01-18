@@ -23,14 +23,14 @@ class NDNTrace(Trace):
         """Read a line, and fire events if necessary"""
         print("=========")
         data_back, timestamp, name, size, priority, interest_life_time, response_time = line
-        timestamp = int(timestamp)
+        timestamp = float(timestamp)
         size = int(size)
         interest_life_time = int(interest_life_time)
-        response_time = int(response_time)
+        response_time = float(response_time)
         packet = Packet(data_back, timestamp, name, size, priority)
 
         # update the pit table entries by deleting the expired ones
-        forwarder.pit.update_pit_times(env)
+        forwarder.pit.update_times(env)
         print('interest on ' + name + ' arrives at ' + env.now.__str__())
         # cache hit
         if forwarder.index.cs_has_packet(name):
@@ -68,9 +68,9 @@ class NDNTrace(Trace):
             return
 
         # cache miss and pit hit
-        if forwarder.pit.pit_has_name(name):
+        if forwarder.pit.has_name(name):
             print("cache miss, pit hit")
-            forwarder.pit.add_to_pit(name, env.now + interest_life_time)
+            forwarder.pit.add_entry(name, env.now + interest_life_time)
             forwarder.nAggregation += 1
             return
 
@@ -79,7 +79,7 @@ class NDNTrace(Trace):
         forwarder.get_default_tier().cmr += 1
 
         # add entry to the pit
-        forwarder.pit.add_to_pit(name, env.now + interest_life_time)
+        forwarder.pit.add_entry(name, env.now + interest_life_time)
 
         # data won't return, forward interest
         if data_back == "i":
@@ -92,15 +92,15 @@ class NDNTrace(Trace):
             yield env.timeout(response_time)
             print("=========")
             print(name + ', data arrives at ' + env.now.__str__())
-            if not forwarder.pit.pit_has_name(name):
+            if not forwarder.pit.has_name(name):
                 print("data already came")
                 return
-            if forwarder.pit.get_pit_entry(name) < env.now:
+            if forwarder.pit.retrieve_entry(name) < env.now:
                 print("pit for the data expired")
-                forwarder.pit.del_from_pit(name)
+                forwarder.pit.delete_entry(name)
                 return
             # delete pit entry
-            forwarder.pit.del_from_pit(name)
+            forwarder.pit.delete_entry(name)
             if forwarder.index.cs_has_packet(name):
                 print("data already in cs")
                 tier = forwarder.index.get_packet_tier(name)

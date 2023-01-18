@@ -3,6 +3,7 @@
 import os
 import time
 from traces.trace_creator import TraceCreator
+
 # constants:
 # data size between 100 bytes and 8000 bytes
 # data rtt between 10ms to 200ms
@@ -17,7 +18,7 @@ from traces.trace_creator import TraceCreator
 # log files
 
 
-#change in zipf
+# change in zipf
 # TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
 #              zipf_alpha=0.8, poisson_lambda=1.0, loss_probability=0.0,
 #              min_data_size=100, max_data_size=8000,
@@ -82,7 +83,6 @@ TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
              min_data_rtt=10000000, max_data_rtt=200000000,
              interest_lifetime=1000000,
              traffic_period=1440)
-
 
 # jsonToCSV = JsonToCSVTrace("resources/ndn6dump.box1.json.gz", trace_len_limit=200000)
 

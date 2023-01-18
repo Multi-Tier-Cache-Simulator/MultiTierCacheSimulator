@@ -1,10 +1,10 @@
 class Packet:
-    def __init__(self, data_back, timestamp, name, size, priority):
+    def __init__(self, data_back: str, timestamp: float, name: str, size: int, priority: str):
         self.data_back = data_back
+        self.timestamp = timestamp
         self.name = name
         self.size = size
         self.priority = priority
-        self.timestamp = timestamp
 
     def __str__(self):
-        print(self.data_back.__str__() + ", " + self.name.__str__() + ", " + self.size.__str__() + ", ")
+        return f'Packet, Name: {self.name}, Size: {self.size}, Priority: {self.priority}, Timestamp: {self.timestamp}'
