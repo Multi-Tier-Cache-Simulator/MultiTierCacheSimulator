@@ -1,3 +1,5 @@
+cryptography==3.1.1
+pyndn
 pip==22.3.1
 pandas==1.5.2
 simpy~=4.0.1

@@ -16,7 +16,7 @@ from traces.trace_creator import TraceCreator
 # alpha zipf
 # requests/s, 1.0 --> 1000requests/s
 # log files
-
+# ////////////////////////////////////////////////////////////////////// number of priority
 
 # change in zipf
 # TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
@@ -25,64 +25,64 @@ from traces.trace_creator import TraceCreator
 #              min_data_rtt=10000000, max_data_rtt=200000000,
 #              interest_lifetime=1000000000,
 #              traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-             zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
+TraceCreator(n_unique_items=2000, high_priority_content_percentage=0.5,
+             zipf_alpha=1.2, poisson_lambda=10, loss_probability=0.0,
              min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
+             min_data_rtt=0.01, max_data_rtt=0.2,
+             interest_lifetime=1,
+             traffic_period=300)
 
-# change in HPC percentage
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.0,
-             zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.1,
-             zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.2,
-             zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.8,
-             zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=1.0,
-             zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-
-# change in number of requests per second
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-             zipf_alpha=1.2, poisson_lambda=0.1, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-             zipf_alpha=1.2, poisson_lambda=0.25, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
-TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-             zipf_alpha=1.2, poisson_lambda=0.5, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=10000000, max_data_rtt=200000000,
-             interest_lifetime=1000000,
-             traffic_period=1440)
+# # change in HPC percentage
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.0,
+#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.1,
+#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.2,
+#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.8,
+#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=1.0,
+#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+#
+# # change in number of requests per second
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
+#              zipf_alpha=1.2, poisson_lambda=0.1, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
+#              zipf_alpha=1.2, poisson_lambda=0.25, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
+# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
+#              zipf_alpha=1.2, poisson_lambda=0.5, loss_probability=0.0,
+#              min_data_size=100, max_data_size=8000,
+#              min_data_rtt=10000000, max_data_rtt=200000000,
+#              interest_lifetime=1000000,
+#              traffic_period=1440)
 
 # jsonToCSV = JsonToCSVTrace("resources/ndn6dump.box1.json.gz", trace_len_limit=200000)
 

@@ -11,8 +11,8 @@ class LRUPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
         self.name = "LRU"
-        self.nb_packets_capacity = 3
-        # self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
+        # self.nb_packets_capacity = 3
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
         self.lru_dict = OrderedDict()
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):

@@ -1,7 +1,9 @@
+import math
 import sys
 import os
 import time
 import simpy
+
 from plots.plot_creation import Plot
 from simulation import Simulation
 from traces.ndn_trace import NDNTrace
@@ -27,7 +29,7 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 100
+slot_size = 8000
 
 # turn the trace into packets
 trace = NDNTrace()
@@ -54,18 +56,17 @@ except:
     print(f'Error trying to create output folder "{output_folder}"')
 
 # total size 1000kB
-total_size = 10000
+total_size = 8000000
 
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
-size_proportion = [2 / 10]
+size_proportion = [1 / 5]
 
 # available policies
-dramTierPolicies = [PPPolicy, DRAMARCPolicy, DRAMLFUPolicy, DRAMLRUPolicy]
-diskTierPolicies = [LFUPolicy, LRUPolicy, RandPolicy]
-# dramTierPolicies = [LFUPolicy, LRUPolicy, ARCPolicy]
-# diskTierPolicies = [LFUPolicy, LRUPolicy]
-
+dramTierPolicies = [PPPolicy, DRAMLFUPolicy, DRAMLRUPolicy]
+diskTierPolicies = [LFUPolicy]
+# dramTierPolicies = [PPPolicy]
+# diskTierPolicies = [LFUPolicy]
 
 for i in size_proportion:
     for dramPolicy in dramTierPolicies:
@@ -83,20 +84,25 @@ for i in size_proportion:
             index = Index()
             # Create the Content Store tiers
             # dram: max_size=100kB, latency = 100ns = 1e-7s, read_throughput = 40GBPS, write_throughput = 20GBPS
-            dram = Tier(name="DRAM", max_size=int(total_size * i), granularity=1, latency=1e-7, read_throughput=40000000000,
-                        write_throughput=20000000000, target_occupation=0.6)
+            dram = Tier(name="DRAM", max_size=int(total_size * i), granularity=1, latency=1e-7,
+                        read_throughput=40000000000, write_throughput=20000000000, target_occupation=0.6)
             # nvme: max_size=1000kB, latency = 10000ns, read_throughput = 3GBPS = 3Byte Per Nano Second
             # write_throughput = 1GBPS = 1Byte Per Nano Second
-            nvme = Tier(name="NVMe", max_size=int(total_size - total_size*i), granularity=512, latency=1e-5,
+            nvme = Tier(name="NVMe", max_size=int(total_size - total_size * i), granularity=512, latency=1e-5,
                         read_throughput=3000000000, write_throughput=1000000000, target_occupation=1.0)
             tiers = [dram, nvme]
+            nb_packets_capacity_dram = math.trunc(dram.max_size * dram.target_occupation / slot_size)
+            print(nb_packets_capacity_dram)
+            nb_packets_capacity_nvme = math.trunc(nvme.max_size * nvme.target_occupation / slot_size)
+            print(nb_packets_capacity_nvme)
+
             # tiers = [dram]
             # Create the PIT
             pit = PIT()
             # Create the forwarder
             forwarder = Forwarder(env, index, tiers, pit, slot_size)
             # Assign the policies
-            dramPolicy(env, forwarder, dram)
+            drampo = dramPolicy(env, forwarder, dram)
             diskPolicy(env, forwarder, nvme)
 
             latest_filename = "latest" + name + ".log"
@@ -105,7 +111,9 @@ for i in size_proportion:
             print("Starting simulation")
             last_results_filename = name + ".txt"
             last_results = sim.run()
-
+            # x = np.array(range(drampo.p_table.__len__()))
+            # plt.plot(x, np.array(drampo.p_table))
+            # plt.show()
             try:
                 with open(os.path.join(output_folder, last_results_filename), "a") as f:
                     f.write(last_results)

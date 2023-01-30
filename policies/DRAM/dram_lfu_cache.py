@@ -11,17 +11,18 @@ class DRAMLFUPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
         self.name = "DRAM_LFU"
-        self.nb_packets_capacity = 3
-        # self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
+        # self.nb_packets_capacity = 3
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
         self.freqToKey = collections.defaultdict(dict)  # frequency to dict of <key, val>
         self.keyToFreq = collections.defaultdict(int)
         self.keyToVal = collections.defaultdict(Packet)
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
-        print('%s arriving at %s' % (self.tier.name, (env.now)))
+        print(res[0].queue)
+        print('%s arriving at %s' % (self.tier.name, env.now))
         with res[0].request() as req:
             yield req
-            print('%s starting at %s' % (self.tier.name, (env.now)))
+            print('%s starting at %s' % (self.tier.name, env.now))
             if is_write:
                 def first(inp):
                     return next(iter(inp))
@@ -115,4 +116,5 @@ class DRAMLFUPolicy(Policy):
                     raise ValueError(f"Key {packet.name} not found in cache.")
 
             res[0].release(req)
+            print(self.keyToVal.__str__())
             print('%s leaving the resource at %s' % (self.tier.name, (env.now)))

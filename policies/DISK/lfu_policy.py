@@ -11,8 +11,8 @@ class LFUPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
         self.name = "LFU"
-        self.nb_packets_capacity = 3
-        # self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
+        # self.nb_packets_capacity = 3
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
         self.freqToKey = collections.defaultdict(dict)  # frequency to dict of <key, val>
         self.keyToFreq = collections.defaultdict(int)
         self.keyToVal = collections.defaultdict(Packet)

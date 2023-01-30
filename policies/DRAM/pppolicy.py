@@ -42,11 +42,13 @@ class PPPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
         self.name = "DRAM_PP"
-        self.nb_packets_capacity = 3
-        # self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
+        # self.nb_packets_capacity = 3
+        self.nb_packets_capacity = math.trunc(self.tier.max_size * self.tier.target_occupation / forwarder.slot_size)
         self.p = 0  # Target size for the list T1
         self.t1 = Deque()  # T1: recent cache entries
         self.t2 = Deque()  # T2: frequent entries
+        self.p_table = []
+        self.p_table.append(self.p)
 
     def _replace(self, env: Environment, res, packet: Packet):
         if self.t1 and (
@@ -79,6 +81,7 @@ class PPPolicy(Policy):
             # store the removed packet from t2 in disk ?
             try:
                 target_tier_id = self.forwarder.tiers.index(self.tier) + 1
+                print("len(res[1].queue): ", len(res[1].queue).__str__())
 
                 # data is important or Disk is free
                 if (old.priority == 'h' and len(res[1].queue) < self.forwarder.tiers[
@@ -172,8 +175,9 @@ class PPPolicy(Policy):
                 print(packet.name + " found in b1, move to t2")
 
                 self.p = min(self.nb_packets_capacity, self.p + max(
-                    self.forwarder.index.ghost_len('b2') / self.forwarder.index.ghost_len('b1'), 1))
+                    int(self.forwarder.index.ghost_len('b2') / self.forwarder.index.ghost_len('b1')), 1))
 
+                self.p_table.append(self.p)
                 self._replace(env, res, packet)
 
                 self.t2.append_left(packet.name, packet)
@@ -200,7 +204,8 @@ class PPPolicy(Policy):
                 print(packet.name + " found in b2, move to t2")
 
                 self.p = max(0, self.p - max(
-                    self.forwarder.index.ghost_len('b1') / self.forwarder.index.ghost_len('b2'), 1))
+                    int(self.forwarder.index.ghost_len('b1') / self.forwarder.index.ghost_len('b2')), 1))
+                self.p_table.append(self.p)
 
                 self._replace(env, res, packet)
 

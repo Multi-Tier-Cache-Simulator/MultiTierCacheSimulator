@@ -25,7 +25,7 @@ class NDNTrace(Trace):
         data_back, timestamp, name, size, priority, interest_life_time, response_time = line
         timestamp = float(timestamp)
         size = int(size)
-        interest_life_time = int(interest_life_time)
+        interest_life_time = float(interest_life_time)
         response_time = float(response_time)
         packet = Packet(data_back, timestamp, name, size, priority)
 
@@ -96,6 +96,8 @@ class NDNTrace(Trace):
                 print("data already came")
                 return
             if forwarder.pit.retrieve_entry(name) < env.now:
+                print("forwarder.pit.retrieve_entry(name): " + forwarder.pit.retrieve_entry(name).__str__())
+                print("env.now: " + env.now.__str__())
                 print("pit for the data expired")
                 forwarder.pit.delete_entry(name)
                 return
