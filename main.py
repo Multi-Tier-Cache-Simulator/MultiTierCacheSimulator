@@ -12,11 +12,11 @@ from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.content_store.index import Index
 from forwarder import Forwarder
 from policies.DRAM.pppolicy import PPPolicy
-from policies.DRAM.dram_arc_policy import DRAMARCPolicy
+# from policies.DRAM.dram_arc_policy import DRAMARCPolicy
 from policies.DRAM.dram_lru_policy import DRAMLRUPolicy
 from policies.DRAM.dram_lfu_cache import DRAMLFUPolicy
 from policies.DRAM.dram_random_policy import DRAMRandPolicy
-from policies.DISK.arc_policy import ARCPolicy
+# from policies.DISK.arc_policy import ARCPolicy
 from policies.DISK.lru_policy import LRUPolicy
 from policies.DISK.lfu_policy import LFUPolicy
 from policies.DISK.random_policy import RandPolicy
