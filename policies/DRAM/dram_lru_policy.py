@@ -16,17 +16,17 @@ class DRAMLRUPolicy(Policy):
         self.lru_dict = OrderedDict()
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
-        print('%s arriving for packet %s at %s' % (self.tier.name, packet.name, env.now))
-        print(res[0].queue)
-        with res[0].request() as req:
-            yield req
-            print('%s starting for packet %s at %s' % (self.tier.name, packet.name, env.now))
-            if is_write:
+        print('%s arriving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+        if is_write:
+            # if the packet is not already in cache, prepare its insertion
+            if packet.name not in self.lru_dict:
                 if len(self.lru_dict) >= self.nb_packets_capacity:
                     name, old = self.lru_dict.popitem(last=False)
 
                     # index update
                     self.forwarder.index.del_packet_from_cs(name)
+
+                    print("%s evict from DISK " % old.name)
 
                     # evict data
                     self.tier.number_of_eviction_from_this_tier += 1
@@ -48,12 +48,16 @@ class DRAMLRUPolicy(Policy):
                     except:
                         print("no other tier")
 
+            # index update
+            self.forwarder.index.update_packet_tier(packet.name, self.tier)
+
+        with res[0].request() as req:
+            yield req
+            print('%s starting at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+            if is_write:
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
 
                 self.lru_dict[packet.name] = packet
-
-                # index update
-                self.forwarder.index.update_packet_tier(packet.name, self.tier)
 
                 # update time spent writing
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
@@ -63,31 +67,29 @@ class DRAMLRUPolicy(Policy):
                 self.tier.number_of_packets += 1
                 self.tier.number_of_write += 1
             else:
+                yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+
                 if packet.name in self.lru_dict:
-                    yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-
-                    # update time spent reading
-                    if packet.priority == 'l':
-                        self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
-                    else:
-                        self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
-
-                    self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
-
-                    # increment number of reads
-                    self.tier.number_of_reads += 1
-
-                    # update time spent writing
-                    self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
-
                     yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
 
                     self.lru_dict.move_to_end(packet.name)  # moves it at the end
 
+                    # update time spent writing
+                    self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
                     # increment number of writes
                     self.tier.number_of_write += 1
+
+                # update time spent reading
+                if packet.priority == 'l':
+                    self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
                 else:
-                    raise ValueError(f"Key {packet.name} not found in cache.")
+                    self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
+
+                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+
+                # increment number of reads
+                self.tier.number_of_reads += 1
 
             res[0].release(req)
-            print('%s leaving the resource for packet %s at %s' % (self.tier.name, packet.name, env.now))
+            print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))

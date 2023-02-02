@@ -7,8 +7,6 @@ from forwarder import Forwarder
 from simpy.core import Environment
 
 
-# time is in nanoseconds
-# size is in byte
 class Deque(object):
     """Fast searchable queue for default-tier"""
 
@@ -81,7 +79,6 @@ class PPPolicy(Policy):
             # store the removed packet from t2 in disk ?
             try:
                 target_tier_id = self.forwarder.tiers.index(self.tier) + 1
-                print("len(res[1].queue): ", len(res[1].queue).__str__())
 
                 # data is important or Disk is free
                 if (old.priority == 'h' and len(res[1].queue) < self.forwarder.tiers[
@@ -97,31 +94,61 @@ class PPPolicy(Policy):
                 print("no other tier")
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
-        print('%s arriving at %s' % (self.tier.name, env.now))
+        print('%s arriving at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+
+        if self.t1.__contains__(packet.name) or self.t2.__contains__(packet.name):
+            print(packet.name + " cache hit in t1 or t2")
+
+        elif self.forwarder.index.packet_in_ghost(packet.name, 'b1') or self.forwarder.index.packet_in_ghost(packet.name, 'b2'):
+            # index update
+            self.forwarder.index.update_packet_tier(packet.name, self.tier)
+            self.forwarder.index.del_packet_from_ghost(packet.name)
+
+        elif len(self.t1) + self.forwarder.index.ghost_len('b1') == self.nb_packets_capacity:
+            print(packet.name + " cache miss in all queues")
+            # Case A: L1 (T1 u B1) has exactly c pages.
+            if len(self.t1) < self.nb_packets_capacity:
+                print("remove LRU page in b1")
+                self.forwarder.index.pop_packet_from_ghost('b1')
+            else:
+                old = self.t1.pop()
+
+                print("Delete LRU page in t1 = " + old.name)
+
+                # index update
+                self.forwarder.index.del_packet_from_cs(old.name)
+
+                # evict data
+                self.tier.number_of_eviction_from_this_tier += 1
+                self.tier.number_of_packets -= 1
+                self.tier.used_size -= old.size
+        else:
+            total = len(self.t1) + self.forwarder.index.ghost_len('b1') + len(
+                self.t2) + self.forwarder.index.ghost_len('b2')
+            if len(self.t1) + self.forwarder.index.ghost_len('b1') < self.nb_packets_capacity <= total:
+                if total == (2 * self.nb_packets_capacity):
+                    print("Delete LRU page in b2, if |T1| + |T2| + |B1| + |B2| == 2c")
+                    self.forwarder.index.pop_packet_from_ghost('b2')
+
         with res[0].request() as req:
             yield req
-            print('%s starting at %s' % (self.tier.name, env.now))
-            # if data already in cache --> return
-            if is_write and (self.t1.__contains__(packet.name) or self.t2.__contains__(packet.name)):
-                print("data already in dram ")
-                print('%s leaving the resource at %s' % (self.tier.name, env.now))
-                return
+            print('%s starting at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+            if self.t1.__contains__(packet.name):
+                if not is_write:
+                    # read
+                    yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+                    print(packet.name + " cache hit in t1, move to t2")
 
-            if not is_write and self.t1.__contains__(packet.name):
-                # read
-                yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                print(packet.name + " cache hit in t1, move to t2")
+                    # update time spent reading
+                    if packet.priority == 'l':
+                        self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
+                    else:
+                        self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
 
-                # update time spent reading
-                if packet.priority == 'l':
-                    self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
-                else:
-                    self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
+                    self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
 
-                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
-
-                # increment number of reads
-                self.tier.number_of_reads += 1
+                    # increment number of reads
+                    self.tier.number_of_reads += 1
 
                 # write
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
@@ -135,24 +162,25 @@ class PPPolicy(Policy):
                 self.tier.number_of_write += 1
 
                 res[0].release(req)
-                print('%s leaving the resource at %s' % (self.tier.name, env.now))
+                print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
                 return
 
-            if not is_write and self.t2.__contains__(packet.name):
-                # read
-                yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                print(packet.name + " cache hit in t2, move from LRU to MRU of t2")
+            if self.t2.__contains__(packet.name):
+                if not is_write:
+                    # read
+                    yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+                    print(packet.name + " cache hit in t2, move from LRU to MRU of t2")
 
-                # update time spent reading
-                if packet.priority == 'l':
-                    self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
-                else:
-                    self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
+                    # update time spent reading
+                    if packet.priority == 'l':
+                        self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
+                    else:
+                        self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
 
-                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+                    self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
 
-                # increment number of reads
-                self.tier.number_of_reads += 1
+                    # increment number of reads
+                    self.tier.number_of_reads += 1
 
                 # write
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
@@ -166,25 +194,21 @@ class PPPolicy(Policy):
                 self.tier.number_of_write += 1
 
                 res[0].release(req)
-                print('%s leaving the resource at %s' % (self.tier.name, env.now))
+                print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
                 return
 
             if self.forwarder.index.packet_in_ghost(packet.name, 'b1'):
-                # write data
-                yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
                 print(packet.name + " found in b1, move to t2")
-
                 self.p = min(self.nb_packets_capacity, self.p + max(
                     int(self.forwarder.index.ghost_len('b2') / self.forwarder.index.ghost_len('b1')), 1))
 
                 self.p_table.append(self.p)
                 self._replace(env, res, packet)
 
-                self.t2.append_left(packet.name, packet)
+                # write data
+                yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
 
-                # index update
-                self.forwarder.index.update_packet_tier(packet.name, self.tier)
-                self.forwarder.index.del_packet_from_ghost(packet.name)
+                self.t2.append_left(packet.name, packet)
 
                 # update time spent writing
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
@@ -195,25 +219,20 @@ class PPPolicy(Policy):
                 self.tier.used_size += packet.size
 
                 res[0].release(req)
-                print('%s leaving the resource at %s' % (self.tier.name, env.now))
+                print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
                 return
 
             if self.forwarder.index.packet_in_ghost(packet.name, 'b2'):
-                # time
-                yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
                 print(packet.name + " found in b2, move to t2")
-
                 self.p = max(0, self.p - max(
                     int(self.forwarder.index.ghost_len('b1') / self.forwarder.index.ghost_len('b2')), 1))
                 self.p_table.append(self.p)
 
                 self._replace(env, res, packet)
+                # time
+                yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
 
                 self.t2.append_left(packet.name, packet)
-
-                # index update
-                self.forwarder.index.update_packet_tier(packet.name, self.tier)
-                self.forwarder.index.del_packet_from_ghost(packet.name)
 
                 # update time spent writing
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
@@ -224,20 +243,19 @@ class PPPolicy(Policy):
                 self.tier.used_size += packet.size
 
                 res[0].release(req)
-                print('%s leaving the resource at %s' % (self.tier.name, env.now))
+                print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
                 return
 
             if len(self.t1) + self.forwarder.index.ghost_len('b1') == self.nb_packets_capacity:
                 print(packet.name + " cache miss in all queues")
                 # Case A: L1 (T1 u B1) has exactly c pages.
-                print(len(self.t1))
-                print(self.nb_packets_capacity)
                 if len(self.t1) < self.nb_packets_capacity:
                     print("remove LRU page in b1")
                     self.forwarder.index.pop_packet_from_ghost('b1')
                     self._replace(env, res, packet)
                 else:
                     old = self.t1.pop()
+
                     print("Delete LRU page in t1 = " + old.name)
 
                     # index update
@@ -250,7 +268,7 @@ class PPPolicy(Policy):
             else:
                 total = len(self.t1) + self.forwarder.index.ghost_len('b1') + len(
                     self.t2) + self.forwarder.index.ghost_len('b2')
-                if total >= self.nb_packets_capacity:
+                if len(self.t1) + self.forwarder.index.ghost_len('b1') < self.nb_packets_capacity <= total:
                     if total == (2 * self.nb_packets_capacity):
                         print("Delete LRU page in b2, if |T1| + |T2| + |B1| + |B2| == 2c")
                         self.forwarder.index.pop_packet_from_ghost('b2')
@@ -262,9 +280,6 @@ class PPPolicy(Policy):
             # Finally, fetch x to the cache and move it to MRU position in T1
             self.t1.append_left(packet.name, packet)
 
-            # index update
-            self.forwarder.index.update_packet_tier(packet.name, self.tier)
-
             # update time spent writing
             self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
@@ -273,6 +288,9 @@ class PPPolicy(Policy):
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
 
+            # index update
+            self.forwarder.index.update_packet_tier(packet.name, self.tier)
+
             res[0].release(req)
-            print('%s leaving the resource at %s' % (self.tier.name, env.now))
+            print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
             return
