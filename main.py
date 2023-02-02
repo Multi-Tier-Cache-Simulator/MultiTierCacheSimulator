@@ -12,10 +12,14 @@ from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.content_store.index import Index
 from forwarder import Forwarder
 from policies.DRAM.pppolicy import PPPolicy
+# from policies.DRAM.dram_arc_policy import DRAMARCPolicy
 from policies.DRAM.dram_lru_policy import DRAMLRUPolicy
 from policies.DRAM.dram_lfu_cache import DRAMLFUPolicy
+from policies.DRAM.dram_random_policy import DRAMRandPolicy
+# from policies.DISK.arc_policy import ARCPolicy
 from policies.DISK.lru_policy import LRUPolicy
 from policies.DISK.lfu_policy import LFUPolicy
+from policies.DISK.random_policy import RandPolicy
 
 # time is in nanos
 # size is in byte
@@ -25,7 +29,7 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 20000
+slot_size = 8000
 
 # turn the trace into packets
 trace = NDNTrace()
@@ -52,16 +56,16 @@ except:
     print(f'Error trying to create output folder "{output_folder}"')
 
 # total size 1000kB
-total_size = slot_size * 100
+total_size = 8000000
 
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
-size_proportion = [2 / 10]
+size_proportion = [1 / 5]
 
 # available policies
 dramTierPolicies = [PPPolicy, DRAMLFUPolicy, DRAMLRUPolicy]
-diskTierPolicies = [LRUPolicy, LFUPolicy]
-# dramTierPolicies = [DRAMLRUPolicy]
+diskTierPolicies = [LFUPolicy]
+# dramTierPolicies = [PPPolicy]
 # diskTierPolicies = [LFUPolicy]
 
 for i in size_proportion:
@@ -83,7 +87,7 @@ for i in size_proportion:
             dram = Tier(name="DRAM", max_size=int(total_size * i), granularity=1, latency=1e-7,
                         read_throughput=40000000000, write_throughput=20000000000, target_occupation=0.6)
             # nvme: max_size=1000kB, latency = 10000ns, read_throughput = 3GBPS = 3Byte Per Nano Second
-            # write_throughput = 1GBPS
+            # write_throughput = 1GBPS = 1Byte Per Nano Second
             nvme = Tier(name="NVMe", max_size=int(total_size - total_size * i), granularity=512, latency=1e-5,
                         read_throughput=3000000000, write_throughput=1000000000, target_occupation=1.0)
             tiers = [dram, nvme]
