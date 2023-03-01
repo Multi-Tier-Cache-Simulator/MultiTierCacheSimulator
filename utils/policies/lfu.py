@@ -31,7 +31,7 @@ class LFU:
             self.keyToVal[key] = key
         else:
             if len(self.keyToVal) >= self.nb_packets_capacity:
-                # print("evict from the DISK")
+                # print("evict from the Others")
                 # need to pop out <key,value> with the smallest frequency
                 freq = 1
                 while len(self.freqToKey[freq]) == 0:
@@ -48,12 +48,12 @@ class LFU:
             self.keyToVal[key] = key
 
 
-cachelfu = LFU(10000)
+cachelfu = LFU(200)
 
 hit = 0
 miss = 0
 
-with open("ndn_trace.csv", "r") as trace_file:
+with open("../../resources/lru_better.csv", "r") as trace_file:
     for line in trace_file:
         request = line.strip().split(',')
         req_time = request[1]

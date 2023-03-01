@@ -69,7 +69,7 @@ class RandPolicy(Policy):
             res[1].release(req)
             print('%s leaving the resource at %s' % (self.tier.name, (env.now)))
 
-    def prefetch_packet(self, packet: Packet):
+    def prefetch_packet(self, env: Environment, packet: Packet):
         print("prefetch packet from disk " + self.tier.name.__str__())
         if packet.name in self.random_struct:
             self.random_struct.pop(packet.name)

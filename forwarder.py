@@ -34,3 +34,9 @@ class Forwarder:
 
     def get_default_tier(self):
         return self.tiers[self.default_tier_index]
+
+    def get_next_tier(self, index):
+        return self.tiers[index]
+
+    def get_last_tier(self):
+        return self.tiers[self.tiers.__len__() - 1]

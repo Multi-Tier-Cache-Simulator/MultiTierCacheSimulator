@@ -41,7 +41,7 @@ class TraceCreator:
             packet = Packet("d", 0, i.__str__(), size, priority)
             unique_words[i] = packet
 
-        with open('C:/Users/lna11/Desktop/NDN-Caching/code/multi_tier_cache_simulator/resources/dataset_ndn/synthetic-'
+        with open('../resources/dataset_ndn/synthetic-'
                   + n_unique_items.__str__() + "_" + poisson_lambda.__str__()
                   + "_" + zipf_alpha.__str__() + "_" + high_priority_content_percentage.__str__()
                   + "_" + traffic_period.__str__() + '.csv',
@@ -66,12 +66,10 @@ class TraceCreator:
         creation_time = time.time() - start_time
         print("Finished creating the trace at: " + time.time().__str__())
 
-        with open(
-                'C:/Users/lna11/Desktop/NDN-Caching/code/multi_tier_cache_simulator/resources/time'
-                '/synthetic- '
-                + n_unique_items.__str__() + "_" + poisson_lambda.__str__()
-                + "_" + zipf_alpha.__str__() + "_" + high_priority_content_percentage.__str__() + "_"
-                + traffic_period.__str__() + "_" + "time" + '.csv',
-                'w', encoding="utf-8", newline='') as f:
+        with open('../resources/time/synthetic- '
+                  + n_unique_items.__str__() + "_" + poisson_lambda.__str__()
+                  + "_" + zipf_alpha.__str__() + "_" + high_priority_content_percentage.__str__() + "_"
+                  + traffic_period.__str__() + "_" + "time" + '.csv',
+                  'w', encoding="utf-8", newline='') as f:
             writer = csv.writer(f)
             writer.writerow("Trace creation took: " + creation_time.__str__())

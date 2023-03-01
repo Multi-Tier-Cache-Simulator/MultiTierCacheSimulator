@@ -1,8 +1,27 @@
 # import json
 # import os
-import os
+# import time
+# from traces.trace_creation_and_parsing.trace_creator import TraceCreator
+# from common.deque import Deque
+# from plots.plot_creation import Plot
+#
+# from traces.trace_analysis.CSVTraceDistribution import CSVTraceDistributions
+#
+# csvTraceDistributions = CSVTraceDistributions("out")
+# csvTraceDistributions.size_distribution("C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/resources"
+#                                         "/dataset_ndn/synthetic-200_10_1.2_0.5_30.csv")
+# # csvTraceDistributions.frequency_counter("../resources/dataset_ndn/out.csv", 2)
+# csvTraceDistributions.event_distribution("C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/resources"
+#                                          "/dataset_ndn/synthetic-200_10_1.2_0.5_30.csv")
+# output_folder = "C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/logs/Thu_16_Feb_2023_11-00-55"
+# slot_size = 8000
+# nb_interests = 18067
+# nb_high_priority = 7544
+# nb_low_priority = 10523
+# Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)
 import time
-from traces.trace_creator import TraceCreator
+
+import numpy as np
 
 # constants:
 # data size between 100 bytes and 8000 bytes
@@ -15,88 +34,47 @@ from traces.trace_creator import TraceCreator
 # percentage of high priority content
 # alpha zipf
 # requests/s, 1.0 --> 1000requests/s
-# log files
-# ////////////////////////////////////////////////////////////////////// number of priority
 
-# change in zipf
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-#              zipf_alpha=0.8, poisson_lambda=1.0, loss_probability=0.0,
+# TraceCreator(n_unique_items=200, high_priority_content_percentage=0.5,
+#              zipf_alpha=1.2, poisson_lambda=10, loss_probability=0.0,
 #              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000000,
-#              traffic_period=1440)
-TraceCreator(n_unique_items=2000, high_priority_content_percentage=0.5,
-             zipf_alpha=1.2, poisson_lambda=10, loss_probability=0.0,
-             min_data_size=100, max_data_size=8000,
-             min_data_rtt=0.01, max_data_rtt=0.2,
-             interest_lifetime=1,
-             traffic_period=300)
-
-# # change in HPC percentage
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.0,
-#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.1,
-#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.2,
-#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.8,
-#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=1.0,
-#              zipf_alpha=1.2, poisson_lambda=1.0, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-#
-# # change in number of requests per second
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-#              zipf_alpha=1.2, poisson_lambda=0.1, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-#              zipf_alpha=1.2, poisson_lambda=0.25, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
-# TraceCreator(n_unique_items=50000, high_priority_content_percentage=0.5,
-#              zipf_alpha=1.2, poisson_lambda=0.5, loss_probability=0.0,
-#              min_data_size=100, max_data_size=8000,
-#              min_data_rtt=10000000, max_data_rtt=200000000,
-#              interest_lifetime=1000000,
-#              traffic_period=1440)
+#              min_data_rtt=0.01, max_data_rtt=0.2,
+#              interest_lifetime=1,
+#              traffic_period=30)
 
 # jsonToCSV = JsonToCSVTrace("resources/ndn6dump.box1.json.gz", trace_len_limit=200000)
-
-# csvTraceD = CSVTraceDistributions("ndn6trace")
-# csvTraceD.event_distribution("resources/dataset_ndn/ndn6trace.csv")
-# csvTraceD.packets_distribution("resources/dataset_ndn/ndn6trace.csv")
-# csvTraceD.size_distribution("resources/dataset_ndn/ndn6trace.csv")
-
 # jsonTraceD = JsonTraceDistributions()
 # jsonTraceD.event_distribution("resources/dataset_ndn/ndn6dump.box1.json.gz")
 # jsonTraceD.packets_distribution("resources/dataset_ndn/ndn6dump.box1.json.gz")
 # jsonTraceD.size_distribution("resources/dataset_ndn/ndn6dump.box1.json.gz")
+# def insert_into_lists(L, Dram, disk, value, index):
+#     # insert the new value into the main list (L)
+#     L.insert(index, value)
+#
+#     # determine which list (L1 or L2) the new value should be inserted into
+#     if index <= 1:
+#         Dram.insert(index, value)
+#     else:
+#         disk.insert(index - 2, value)
+#
+#     # if L2 has more than 2 elements, move an element from L2 to L1
+#     if len(disk) > 2:
+#         Dram.append(disk.pop(0))
+#
+#     print(L)
+#     print(Dram)
+#     print(disk)
+#
+#
+# L = [2, 4, 1, 18]
+# Dram = [2, 4]
+# disk = [1, 18]
+# insert_into_lists(L, Dram, disk, 25, 3)
+# print(10 % 5)
+# print(len([1,2,3]))
 
-# csvTraceDistributions = CSVTraceDistributions("synthetic-trace")
-# csvTraceDistributions.event_distribution("resources/dataset_ndn/synthetic-trace.csv")
-# csvTraceDistributions.packets_distribution("resources/dataset_ndn/synthetic-trace.csv")
-# csvTraceDistributions.size_distribution("resources/dataset_ndn/synthetic-trace.csv")
+# my_list = [10, 20, 30 ]
+# item = 20
+#
+# reversed_index = len(my_list) - my_list.index(item) - 1
+# print(reversed_index) # Output: 2

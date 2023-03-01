@@ -62,12 +62,12 @@ class ARC:
         self.t1.appendleft(key)
 
 
-cachearc = ARC(1000)
+cachearc = ARC(200)
 
 hit = 0
 miss = 0
 
-with open("ndn_trace.csv", "r") as trace_file:
+with open("../../resources/synthetic-200_1_1.2_0.5_30.csv", "r") as trace_file:
     for line in trace_file:
         request = line.strip().split(',')
         req_time = request[1]
@@ -76,7 +76,6 @@ with open("ndn_trace.csv", "r") as trace_file:
         priority = request[4]
         lifetime = request[5]
         response_time = request[6]
-
         if cachearc.get(name) != -1:
             # print(name + ", hit")
             hit += 1

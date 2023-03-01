@@ -3,7 +3,7 @@ from simpy.core import Environment
 
 class Tier:
     def __init__(self, name: str, max_size: int, granularity: int, latency: float, read_throughput: float,
-                 write_throughput: float, target_occupation: float = 0.9):
+                 write_throughput: float, target_occupation: float = 1.0):
         """""
         :param name: name of the tier
         :param max_size: octets
@@ -44,8 +44,9 @@ class Tier:
         self.chr_lpc = 0  # cache hit ratio for low priority content
         self.cmr = 0  # cache miss ratio
 
-        # disk structure
-        self.submission_queue_max_size = 64
+        self.penalty = 0  # eviction penalty
+
+        self.submission_queue_max_size = 64  # disk structure
 
     def register_strategy(self, strategy: "Policy"):
         self.strategies += [strategy]
@@ -54,7 +55,7 @@ class Tier:
         for strategy in self.strategies:
             env.process(strategy.on_packet_access(env, res, packet, False))
 
-    def write_packet(self, env: Environment, res, packet, cause=None):
+    def write_packet(self, env, res, packet, cause=None):
         for strategy in self.strategies:
             env.process(strategy.on_packet_access(env, res, packet, True))
         if cause is not None:
@@ -65,6 +66,28 @@ class Tier:
             else:
                 raise RuntimeError(f'Unknown cause {cause}. Expected "eviction", "prefetching" or None')
 
-    def prefetch_packet(self, packet):
+    def write_packet_t1(self, env, res, packet, index=None, cause=None):
         for strategy in self.strategies:
-            strategy.prefetch_packet(packet)
+            env.process(strategy.on_packet_access_t1(env, res, packet, index))
+        if cause is not None:
+            if cause == "eviction":
+                self.number_of_eviction_to_this_tier += 1
+            elif cause == "prefetching":
+                self.number_of_prefetching_to_this_tier += 1
+            else:
+                raise RuntimeError(f'Unknown cause {cause}. Expected "eviction", "prefetching" or None')
+
+    def write_packet_t2(self, env, res, packet, is_write, index=None, cause=None):
+        for strategy in self.strategies:
+            env.process(strategy.on_packet_access_t2(env, res, packet, is_write, index))
+        if cause is not None:
+            if cause == "eviction":
+                self.number_of_eviction_to_this_tier += 1
+            elif cause == "prefetching":
+                self.number_of_prefetching_to_this_tier += 1
+            else:
+                raise RuntimeError(f'Unknown cause {cause}. Expected "eviction", "prefetching" or None')
+
+    def prefetch_packet(self, env, packet):
+        for strategy in self.strategies:
+            env.process(strategy.prefetch_packet(env, packet))

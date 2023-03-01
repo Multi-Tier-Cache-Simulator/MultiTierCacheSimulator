@@ -22,6 +22,7 @@ class Plot:
 
         # plots
         plot_content_store_config = []
+        plot_penalty = []  # penalty
 
         # ram
         plot_cache_hit_ratio_ram = []  # chr
@@ -44,6 +45,7 @@ class Plot:
         plot_number_write_disk = []  # number of write
         plot_high_p_data_retrieval_time_disk = []  # high priority data retrieval time
         plot_low_p_data_retrieval_time_disk = []  # low priority data retrieval time
+
         # change directory to json files
         os.chdir(output_folder)
         result = list()
@@ -96,6 +98,9 @@ class Plot:
                     0.0) if nb_low_priority == 0 else plot_low_p_data_retrieval_time_ram.append(
                     line['low_p_data_retrieval_time'] / nb_low_priority)
 
+                # penalty
+                plot_penalty.append(line['penalty'])
+
             if line['tier_name'] == 'NVMe':
                 # chr
                 plot_cache_hit_ratio_disk.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_disk.append(
@@ -137,7 +142,7 @@ class Plot:
 
         # ==================
         # chr total
-        df = pd.DataFrame(data={'DRAM': plot_cache_hit_ratio_ram, 'DISK': plot_cache_hit_ratio_disk})
+        df = pd.DataFrame(data={'DRAM': plot_cache_hit_ratio_ram, 'Others': plot_cache_hit_ratio_disk})
         df.index = plot_content_store_config
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
                      ylabel='Cache Hit Ratio')
@@ -185,7 +190,7 @@ class Plot:
 
         # ==================
         # Used size per tier
-        df = pd.DataFrame(data={'DRAM': plot_used_size_ram, 'DISK': plot_used_size_disk})
+        df = pd.DataFrame(data={'DRAM': plot_used_size_ram, 'Others': plot_used_size_disk})
         df.index = plot_content_store_config
 
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
@@ -201,7 +206,7 @@ class Plot:
 
         # ==================
         # waisted size
-        df = pd.DataFrame(data={'DRAM': plot_waisted_size_ram, 'DISK': plot_waisted_size_disk})
+        df = pd.DataFrame(data={'DRAM': plot_waisted_size_ram, 'Others': plot_waisted_size_disk})
         df.index = plot_content_store_config
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
                      ylabel='Waisted size (ko)')
@@ -217,7 +222,7 @@ class Plot:
 
         # ==================
         # Number of read
-        df = pd.DataFrame(data={'DRAM': plot_number_read_ram, 'DISK': plot_number_read_disk})
+        df = pd.DataFrame(data={'DRAM': plot_number_read_ram, 'Others': plot_number_read_disk})
         df.index = plot_content_store_config
 
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
@@ -233,7 +238,7 @@ class Plot:
 
         # ==================
         # Number of write
-        df = pd.DataFrame(data={'DRAM': plot_number_write_ram, 'DISK': plot_number_write_disk})
+        df = pd.DataFrame(data={'DRAM': plot_number_write_ram, 'Others': plot_number_write_disk})
         df.index = plot_content_store_config
 
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
@@ -250,7 +255,7 @@ class Plot:
         # ==================
         # high priority data retrieval time
         df = pd.DataFrame(
-            data={'DRAM': plot_high_p_data_retrieval_time_ram, 'DISK': plot_high_p_data_retrieval_time_disk})
+            data={'DRAM': plot_high_p_data_retrieval_time_ram, 'Others': plot_high_p_data_retrieval_time_disk})
         df.index = plot_content_store_config
 
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
@@ -267,7 +272,7 @@ class Plot:
         # ==================
         # low priority data retrieval time
         df = pd.DataFrame(
-            data={'DRAM': plot_low_p_data_retrieval_time_ram, 'DISK': plot_low_p_data_retrieval_time_disk})
+            data={'DRAM': plot_low_p_data_retrieval_time_ram, 'Others': plot_low_p_data_retrieval_time_disk})
         df.index = plot_content_store_config
 
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
@@ -278,5 +283,21 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "low_priority_data_retrieval_time.png"))
+        except:
+            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+
+        # ==================
+        # penalty
+        df = pd.DataFrame(data={'penalty':plot_penalty})
+        df.index = plot_content_store_config
+
+        ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
+                     ylabel='Penalty ($)')
+        for c in ax.containers:
+            labels = [v.get_height() if v.get_height() > 0 else '' for v in c]
+            ax.bar_label(c, labels=labels, label_type='center')
+
+        try:
+            plt.savefig(os.path.join(figure_folder, "penalty.png"))
         except:
             print(f'Error trying to write into a new file in output folder "{figure_folder}"')

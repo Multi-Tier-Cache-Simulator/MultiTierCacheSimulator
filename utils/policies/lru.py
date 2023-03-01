@@ -20,12 +20,12 @@ class LRU:
         self.lru_dict[key] = value
 
 
-cache = LRU(1000)
+cache = LRU(200)
 
 hit = 0
 miss = 0
 
-with open("ndn_trace.csv", "r") as trace_file:
+with open("../../resources/lru_better.csv", "r") as trace_file:
     i = 0
     for line in trace_file:
         i += 1
