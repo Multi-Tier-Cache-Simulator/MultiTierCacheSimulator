@@ -30,9 +30,9 @@ class DRAMARCPolicy(Policy):
 
         if len(self.t1) + len(self.t2) > self.c:
             if len(self.t1) > self.p or not self.t2:
-                self.send_to_next_level_t1(env, res)
+                yield env.process(self.send_to_next_level_t1(env, res))
             else:
-                self.send_to_next_level_t2(env, res)
+                yield env.process(self.send_to_next_level_t2(env, res))
 
         # increment number of writes
         self.tier.number_of_packets += 1
@@ -68,9 +68,9 @@ class DRAMARCPolicy(Policy):
 
         if len(self.t1) + len(self.t2) > self.c:
             if len(self.t1) > self.p or not self.t2:
-                self.send_to_next_level_t1(env, res)
+                yield env.process(self.send_to_next_level_t1(env, res))
             else:
-                self.send_to_next_level_t2(env, res)
+                yield env.process(self.send_to_next_level_t2(env, res))
 
         # increment number of writes
         self.tier.number_of_packets += 1
@@ -121,7 +121,8 @@ class DRAMARCPolicy(Policy):
             # Disk is free
             if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                 print("evict from t1 to disk %s" % packet.name)
-                self.forwarder.tiers[target_tier_id].write_packet_t1(env, res, packet, index=None, cause='eviction')
+                yield env.process(self.forwarder.tiers[target_tier_id].write_packet_t1(env, res, packet, index=None,
+                                                                                       cause='eviction'))
             # disk is overloaded --> drop packet
             else:
                 print("drop packet %s" % packet.name)
@@ -143,8 +144,9 @@ class DRAMARCPolicy(Policy):
             # Disk is free
             if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                 print("evict from t2 to disk %s" % packet.name)
-                self.forwarder.tiers[target_tier_id].write_packet_t2(env, res, packet, True, index=None,
-                                                                     cause='eviction')
+                yield env.process(
+                    self.forwarder.tiers[target_tier_id].write_packet_t2(env, res, packet, True, index=None,
+                                                                         cause='eviction'))
             # disk is overloaded --> drop packet
             else:
                 print("drop packet %s" % packet.name)

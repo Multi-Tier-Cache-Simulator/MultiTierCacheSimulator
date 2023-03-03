@@ -38,7 +38,8 @@ class DRAMLRUPolicy(Policy):
                     # data is important or Disk is free
                     if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                         print("evict to disk %s" % lru_name)
-                        self.forwarder.tiers[target_tier_id].write_packet(env, res, lru_old, cause='eviction')
+                        yield env.process(
+                            self.forwarder.tiers[target_tier_id].write_packet(env, res, lru_old, cause='eviction'))
                         # disk is overloaded --> drop packet
                     else:
                         print("drop packet %s" % lru_name)
@@ -71,19 +72,19 @@ class DRAMLRUPolicy(Policy):
                 # writing
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+            elif packet.name in self.lru_dict:
+                # reading
+                yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+                if packet.priority == 'l':
+                    self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
+                else:
+                    self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
+                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+                # writing
+                yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
+                self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
             else:
-                if packet.name in self.lru_dict:
-                    # reading
-                    yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-                    if packet.priority == 'l':
-                        self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
-                    else:
-                        self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
-                    self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
-                    # writing
-                    yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
-                    self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
-
+                raise ValueError(f"Key {packet.name} not found in cache.")
             res[0].release(req)
             print(self.lru_dict.keys().__str__())
             self.forwarder.index.__str__()

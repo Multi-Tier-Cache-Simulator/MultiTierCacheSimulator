@@ -25,7 +25,7 @@ cache = LRU(200)
 hit = 0
 miss = 0
 
-with open("../../resources/lru_better.csv", "r") as trace_file:
+with open("../../resources/other_dataset/lru_better.csv", "r") as trace_file:
     i = 0
     for line in trace_file:
         i += 1

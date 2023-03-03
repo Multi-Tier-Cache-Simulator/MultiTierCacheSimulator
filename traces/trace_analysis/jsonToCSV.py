@@ -23,16 +23,16 @@ import json
 
 
 class JsonToCSVTrace:
-    def __init__(self, fileName: str, trace_len_limit=-1):
+    def __init__(self, file_name: str, trace_len_limit=-1):
         self.nb_interests = 0
-        self.gen_trace(fileName, trace_len_limit)
+        self.gen_trace(file_name, trace_len_limit)
 
-    def gen_trace(self, fileName: str, trace_len_limit=-1):
+    def gen_trace(self, file_name: str, trace_len_limit=-1):
         # 'data_back', 'timestamp', 'name', 'size', 'priority', 'responseTime'
         # gather the catalog of items from the trace
         lines = []
         # turn the json file to list
-        for line in gzip.open(fileName, "r"):
+        for line in gzip.open(file_name, "r"):
             lines.append(json.loads(line))
 
         # Use only lines that have data_back, timestamp, size and name
@@ -87,7 +87,7 @@ class JsonToCSVTrace:
                 if s:
                     response_times.update({k['name']: line['ts'] - s[0]['ts'] for k in s})
 
-        with open('resources/dataset_ndn/ndn6trace.csv', 'w', newline='') as f:
+        with open('resources/dataset_jedi/ndn6trace.csv', 'w', newline='') as f:
             writer = csv.writer(f)
             for line in lines_with_incoming_traffic:
                 if line['t'] == '>D' and response_times.get(line['name']):

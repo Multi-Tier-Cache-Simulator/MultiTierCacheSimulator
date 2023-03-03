@@ -53,11 +53,11 @@ class Tier:
 
     def read_packet(self, env: Environment, res, packet):
         for strategy in self.strategies:
-            env.process(strategy.on_packet_access(env, res, packet, False))
+            yield env.process(strategy.on_packet_access(env, res, packet, False))
 
     def write_packet(self, env, res, packet, cause=None):
         for strategy in self.strategies:
-            env.process(strategy.on_packet_access(env, res, packet, True))
+            yield env.process(strategy.on_packet_access(env, res, packet, True))
         if cause is not None:
             if cause == "eviction":
                 self.number_of_eviction_to_this_tier += 1
@@ -68,7 +68,7 @@ class Tier:
 
     def write_packet_t1(self, env, res, packet, index=None, cause=None):
         for strategy in self.strategies:
-            env.process(strategy.on_packet_access_t1(env, res, packet, index))
+            yield env.process(strategy.on_packet_access_t1(env, res, packet, index))
         if cause is not None:
             if cause == "eviction":
                 self.number_of_eviction_to_this_tier += 1
@@ -79,7 +79,7 @@ class Tier:
 
     def write_packet_t2(self, env, res, packet, is_write, index=None, cause=None):
         for strategy in self.strategies:
-            env.process(strategy.on_packet_access_t2(env, res, packet, is_write, index))
+            yield env.process(strategy.on_packet_access_t2(env, res, packet, is_write, index))
         if cause is not None:
             if cause == "eviction":
                 self.number_of_eviction_to_this_tier += 1
@@ -90,4 +90,4 @@ class Tier:
 
     def prefetch_packet(self, env, packet):
         for strategy in self.strategies:
-            env.process(strategy.prefetch_packet(env, packet))
+            yield env.process(strategy.prefetch_packet(env, packet))

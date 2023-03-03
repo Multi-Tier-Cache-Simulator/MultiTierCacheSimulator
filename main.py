@@ -11,10 +11,12 @@ from policies.LRUorPriority.dram_lru_policy import DRAMLRUPolicy
 from policies.LRUorPriority.lru_policy import DISKLRUPolicy
 from policies.LFU.dram_lfu_policy import DRAMLFUPolicy
 from policies.LFU.lfu_policy import DISKLFUPolicy
+from policies.RANDOM.dram_random_policy import DRAMRandPolicy
+from policies.RANDOM.random_policy import DISKRandPolicy
 
-from traces.trace_creation_and_parsing.arc_trace import ARCTrace
-from traces.trace_creation_and_parsing.priority_trace import PriorityTrace
-from traces.trace_creation_and_parsing.ndn_trace import NDNTrace
+from traces.trace_reading.arc_trace import ARCTrace
+from traces.trace_reading.priority_trace import PriorityTrace
+from traces.trace_reading.common_trace import CommonTrace
 
 # time is in nanos
 # size is in byte
@@ -24,19 +26,20 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 8000
+slot_size = 2599616880
 
 # turn the trace into packets
 arcTrace = ARCTrace()
-arcTrace.gen_data()
+# arcTrace.gen_data()
+arcTrace.gen_data(trace_len_limit=20000)
 
 priorityTrace = PriorityTrace()
-priorityTrace.gen_data()
+# priorityTrace.gen_data()
+priorityTrace.gen_data(trace_len_limit=20000)
 
-trace = NDNTrace()
-trace.gen_data()
-
-# trace.gen_data(trace_len_limit=200)
+trace = CommonTrace()
+# trace.gen_data()
+trace.gen_data(trace_len_limit=20000)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -56,8 +59,9 @@ except Exception as e:
     print(f'Error trying to create output folder "{output_folder}"')
     print(e)
 
+# 51540
 # total size 1000kB
-total_size = slot_size * 10
+total_size = slot_size * 515
 
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
@@ -75,6 +79,9 @@ policy_main(DRAMLRUPolicy, DISKLRUPolicy, slot_size, size_proportion, total_size
 
 # LFU
 policy_main(DRAMLFUPolicy, DISKLFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+
+# RAND
+policy_main(DRAMRandPolicy, DISKRandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
 # output_folder = "C:/Users/lna11/Desktop/multi_tier_cache_simulator/logs/Sun_15_Jan_2023_22-50-53"
 Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)

@@ -51,7 +51,7 @@ class DRAMLFUPolicy(Policy):
                     # submission queue is not full
                     if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                         print("evict to disk %s" % old.name)
-                        self.forwarder.tiers[target_tier_id].write_packet(env, res, old, cause='eviction')
+                        yield env.process(self.forwarder.tiers[target_tier_id].write_packet(env, res, old, cause='eviction'))
                     # disk is overloaded --> drop packet
                     else:
                         print("drop packet %s" % old.name)

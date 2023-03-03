@@ -46,11 +46,11 @@ class AbstractARCPolicy(Policy):
             if packet.priority == "h":
                 print("%s hit in t1, high priority, promote to MRU t2" % packet.name)
                 self.t1_remove(packet)
-                self.t2_append_left(env, res, packet, False)
+                yield env.process(self.t2_append_left(env, res, packet, False))
             else:
                 print("%s hit in t1, low priority, write to index in t2" % packet.name)
                 self.t1_remove(packet)
-                self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False)
+                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False))
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -64,11 +64,11 @@ class AbstractARCPolicy(Policy):
             if packet.priority == "h":
                 print("%s hit in t2, high priority, promote to MRU t2" % packet.name)
                 self.t2_remove(packet)
-                self.t2_append_left(env, res, packet, False)
+                yield env.process(self.t2_append_left(env, res, packet, False))
             else:
                 print("%s hit in t2, low priority, write to index in t2" % packet.name)
                 self.t2_remove(packet)
-                self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False)
+                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False))
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -87,10 +87,10 @@ class AbstractARCPolicy(Policy):
             yield env.process(self.forwarder.index.del_packet_from_ghost(packet.name))
             if packet.priority == "h":
                 print("%s hit in b1, high priority, promote to MRU t2" % packet.name)
-                self.t2_append_left(env, res, packet, True)
+                yield env.process(self.t2_append_left(env, res, packet, True))
             else:
                 print("%s hit in b1, low priority, write to index in t2" % packet.name)
-                self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True)
+                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True))
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -109,10 +109,10 @@ class AbstractARCPolicy(Policy):
             yield env.process(self.forwarder.index.del_packet_from_ghost(packet.name))
             if packet.priority == "h":
                 print("%s hit in b2, high priority, promote to MRU t2" % packet.name)
-                self.t2_append_left(env, res, packet, True)
+                yield env.process(self.t2_append_left(env, res, packet, True))
             else:
                 print("%s hit in b2, low priority, write to index in t2" % packet.name)
-                self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True)
+                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True))
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -147,11 +147,11 @@ class AbstractARCPolicy(Policy):
 
         if packet.priority == "h":
             print("%s high priority, write to MRU t1" % packet.name)
-            self.t1_append_left(env, res, packet)
+            yield env.process(self.t1_append_left(env, res, packet))
         else:
             print("%s low priority, write to index in t1" % packet.name)
             index = round(len(self.t1) / get_alpha())
-            self.t1_append_by_index(env, res, packet, index)
+            yield env.process(self.t1_append_by_index(env, res, packet, index))
         yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
         self.t1.__str__()
@@ -247,11 +247,11 @@ class AbstractARCPolicy(Policy):
 
     def t1_append_left(self, env, res, packet):
         self.t1.append_left(packet.name, packet)
-        self.forwarder.get_default_tier().write_packet_t1(env, res, packet)
+        yield env.process(self.forwarder.get_default_tier().write_packet_t1(env, res, packet))
 
     def t2_append_left(self, env, res, packet, is_write: bool):
         self.t2.append_left(packet.name, packet)
-        self.forwarder.get_default_tier().write_packet_t2(env, res, packet, is_write)
+        yield env.process(self.forwarder.get_default_tier().write_packet_t2(env, res, packet, is_write))
 
     def t1_append_by_index(self, env, res, packet, index):
         self.t1.append_by_index(index, packet.name, packet)
@@ -266,7 +266,7 @@ class AbstractARCPolicy(Policy):
             index -= s[i]
             i -= 1
         print("write to %s at index = %s" % (self.forwarder.tiers[i].name, index))
-        self.forwarder.tiers[i].write_packet_t1(env, res, packet, index)
+        yield env.process(self.forwarder.tiers[i].write_packet_t1(env, res, packet, index))
 
     def t2_append_by_index(self, env, res, packet, index, is_write: bool):
         self.t2.append_by_index(index, packet.name, packet)
@@ -281,7 +281,7 @@ class AbstractARCPolicy(Policy):
             index -= s[i]
             i -= 1
         print("write to %s at index = %s" % (self.forwarder.tiers[i].name, index))
-        self.forwarder.tiers[i].write_packet_t2(env, res, packet, is_write, index)
+        yield env.process(self.forwarder.tiers[i].write_packet_t2(env, res, packet, is_write, index))
 
     def increment_p(self, len_b1, len_b2):
         self.p = min(self.c, self.p + max((len_b2 / len_b1) * (1 + self.beta), 1 + self.beta))

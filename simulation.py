@@ -10,7 +10,7 @@ import sys
 import os
 import time
 
-from traces.trace_creation_and_parsing.trace import Trace
+from traces.trace_reading.trace import Trace
 
 
 class Simulation:
@@ -74,7 +74,7 @@ class Simulation:
         for line in trace.data:
             t_start = float(line[1])
             yield self._env.timeout(
-                max(0.0, t_start - last_ts))  # trace_creation_and_parsing are sorted by t_start order.
+                max(0.0, t_start - last_ts))  # trace_reading are sorted by t_start order.
             last_ts = t_start
             self._env.process(
                 trace.read_data_line(self._env, self._res, self._forwarder, line, self._log_file, self._logs_enabled))

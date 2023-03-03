@@ -8,6 +8,60 @@ import pandas as pd
 
 # _COLUMN_NAMES = ("data_back", "timestamp", "name", "size", "priority", "responseTime ")
 
+def event_distribution(file_name: str, trace_len_limit=-1):
+    print(file_name)
+    with open(file_name, encoding='utf8') as read_obj:
+        csv_reader = csv.reader(read_obj, delimiter=',')
+        lines = list(csv_reader)
+
+    if trace_len_limit != -1:
+        lines = lines[0:trace_len_limit]
+
+    xi_1 = 0
+    diff = 0
+    min_period = 0
+    max_period = 0
+    min_response_time = 0
+    max_response_time = 0
+    average_response_time = 0
+
+    for line in lines:
+        if xi_1 == 0:
+            min_period = float(line[1])
+            min_response_time = float(line[5])
+            xi_1 = float(line[1])
+        else:
+            diff += float(line[1]) - xi_1
+            average_response_time += float(line[5])
+
+            if max_period < float(line[1]) - xi_1:
+                max_period = float(line[1]) - xi_1
+            if min_period > float(line[1]) - xi_1:
+                min_period = float(line[1]) - xi_1
+
+            if max_response_time < float(line[5]):
+                max_response_time = float(line[5])
+            if min_response_time > float(line[5]):
+                min_response_time = float(line[5])
+
+            xi_1 = float(line[1])
+
+    # timestamp
+    moy = diff / len(lines)
+    print("average time of event occurrence = " + moy.__str__())
+    print("minimum time before event occurrence = " + min_period.__str__())
+    print("maximum time before event occurrence = " + max_period.__str__())
+    # names
+    names = [line[2] for line in lines]
+    names = list(set(names))
+    print("number of content = " + len(names).__str__())
+    # response Time
+    art = average_response_time / len(lines)
+    print("average response time = " + art.__str__())
+    print("minimum response time = " + min_response_time.__str__())
+    print("maximum response time = " + max_response_time.__str__())
+
+
 class CSVTraceDistributions:
     def __init__(self, file_name: str):
         distributions_folder = "csv-distributions/<timestamp>"
@@ -20,8 +74,8 @@ class CSVTraceDistributions:
         distributions_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), self.distributions_folder))
         try:
             os.makedirs(self.distributions_folder, exist_ok=True)
-        except:
-            print(f'Error trying to create output folder "{distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to create output folder "{distributions_folder}"' % e)
 
     def packets_distribution(self, file_name: str, trace_len_limit=-1):
         plot_x = []
@@ -39,8 +93,8 @@ class CSVTraceDistributions:
         h = 0
         for line in lines:
             if i == 0:
-                h =float(line[1])
-            diff =float(line[1]) - h
+                h = float(line[1])
+            diff = float(line[1]) - h
             if diff < 1000000000:  # 1second
                 i += 1
             else:
@@ -66,8 +120,8 @@ class CSVTraceDistributions:
 
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_packets_per_time.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
 
         # number of data packet and number of interest packet
 
@@ -85,13 +139,13 @@ class CSVTraceDistributions:
 
         data_lines = [line for line in lines if 'd' in line[0]]
         data_sizes = OrderedDict()
-        min_size =float(data_lines[0][3])
-        max_size =float(data_lines[0][3])
+        min_size = float(data_lines[0][3])
+        max_size = float(data_lines[0][3])
         for line in data_lines:
-            if max_size <float(line[3]):
-                max_size =float(line[3])
-            if min_size >float(line[3]):
-                min_size =float(line[3])
+            if max_size < float(line[3]):
+                max_size = float(line[3])
+            if min_size > float(line[3]):
+                min_size = float(line[3])
             if float(line[3]) in data_sizes.keys():
                 data_sizes[int(line[3])] = data_sizes[int(line[3])] + 1
             else:
@@ -101,8 +155,8 @@ class CSVTraceDistributions:
             plot_data_sizes.append(key)
             plot_number_of_data_packets.append(value)
 
-        data_first_key =float(next(iter(data_lines))[1])
-        data_last_key =float(next(reversed(data_lines))[1])
+        data_first_key = float(next(iter(data_lines))[1])
+        data_last_key = float(next(reversed(data_lines))[1])
         data_period = round((data_last_key - data_first_key) / 6e10, 0)
         plt.figure()
         plt.bar(plot_number_of_data_packets, plot_data_sizes)
@@ -111,8 +165,8 @@ class CSVTraceDistributions:
         plt.ylabel("Number of packets")
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_packets_per_size.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
 
         df = pd.DataFrame(
             data={'Number_Of_Data_Packets_per_size': plot_data_sizes}, index=plot_number_of_data_packets)
@@ -121,64 +175,10 @@ class CSVTraceDistributions:
 
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_data_packets_per_size.png"))
-        except:
-
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
         print("max_size = " + max_size.__str__())
         print("min size = " + min_size.__str__())
-
-    def event_distribution(self, file_name: str, trace_len_limit=-1):
-        print(file_name)
-        with open(file_name, encoding='utf8') as read_obj:
-            csv_reader = csv.reader(read_obj, delimiter=',')
-            lines = list(csv_reader)
-
-        if trace_len_limit != -1:
-            lines = lines[0:trace_len_limit]
-
-        xi_1 = 0
-        diff = 0
-        min_period = 0
-        max_period = 0
-        min_response_time = 0
-        max_response_time = 0
-        average_response_time = 0
-
-        for line in lines:
-            if xi_1 == 0:
-                min_period =float(line[1])
-                min_response_time =float(line[5])
-                xi_1 =float(line[1])
-            else:
-                diff +=float(line[1]) - xi_1
-                average_response_time +=float(line[5])
-
-                if max_period <float(line[1]) - xi_1:
-                    max_period =float(line[1]) - xi_1
-                if min_period >float(line[1]) - xi_1:
-                    min_period =float(line[1]) - xi_1
-
-                if max_response_time <float(line[5]):
-                    max_response_time =float(line[5])
-                if min_response_time >float(line[5]):
-                    min_response_time =float(line[5])
-
-                xi_1 =float(line[1])
-
-        # timestamp
-        moy = diff / len(lines)
-        print("average time of event occurrence = " + moy.__str__())
-        print("minimum time before event occurrence = " + min_period.__str__())
-        print("maximum time before event occurrence = " + max_period.__str__())
-        # names
-        names = [line[2] for line in lines]
-        names = list(set(names))
-        print("number of content = " + len(names).__str__())
-        # response Time
-        art = average_response_time / len(lines)
-        print("average response time = " + art.__str__())
-        print("minimum response time = " + min_response_time.__str__())
-        print("maximum response time = " + max_response_time.__str__())
 
     def frequency_counter(self, file_name: str, column_index: int, trace_len_limit=-1):
         with open(file_name, encoding='utf8') as read_obj:
@@ -196,5 +196,5 @@ class CSVTraceDistributions:
         plt.ylabel("Frequency")
         try:
             plt.savefig(os.path.join(self.distributions_folder, "data_freq.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)

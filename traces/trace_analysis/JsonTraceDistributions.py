@@ -74,8 +74,8 @@ class JsonTraceDistributions:
         distributions_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), self.distributions_folder))
         try:
             os.makedirs(self.distributions_folder, exist_ok=True)
-        except:
-            print(f'Error trying to create output folder "{distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to create output folder "{distributions_folder}"' % e)
 
     def packets_distribution(self, file_name: str, trace_len_limit=-1):
         plot_x = []
@@ -121,8 +121,8 @@ class JsonTraceDistributions:
 
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_packets_per_time.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
 
     def size_distribution(self, file_name: str, trace_len_limit=-1):
         lines = []
@@ -164,8 +164,8 @@ class JsonTraceDistributions:
         plt.ylabel("Number of packets")
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_packets_per_size.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
         df = pd.DataFrame(
             data={'Number_Of_Data_Packets_per_size': plot_data_sizes}, index=plot_number_of_data_packets)
 
@@ -173,8 +173,7 @@ class JsonTraceDistributions:
 
         try:
             plt.savefig(os.path.join(self.distributions_folder, "number_of_data_packets_per_size.png"))
-        except:
-
-            print(f'Error trying to write into a new file in output folder "{self.distributions_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
         print("max_size = " + max_size.__str__())
         print("min size = " + min_size.__str__())

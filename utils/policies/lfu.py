@@ -53,7 +53,7 @@ cachelfu = LFU(200)
 hit = 0
 miss = 0
 
-with open("../../resources/lru_better.csv", "r") as trace_file:
+with open("../../resources/other_dataset/lru_better.csv", "r") as trace_file:
     for line in trace_file:
         request = line.strip().split(',')
         req_time = request[1]
