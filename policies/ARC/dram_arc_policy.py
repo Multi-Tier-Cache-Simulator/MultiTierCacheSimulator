@@ -39,7 +39,7 @@ class DRAMARCPolicy(Policy):
         self.tier.number_of_write += 1
         self.tier.used_size += packet.size
 
-        with res[0].request() as req:
+        with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, env.now))
 
@@ -47,7 +47,7 @@ class DRAMARCPolicy(Policy):
             yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
             self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
-            res[0].release(req)
+            res[self.forwarder.tiers.index(self.tier)].release(req)
 
             self.t1.__str__()
             self.t2.__str__()
@@ -80,7 +80,7 @@ class DRAMARCPolicy(Policy):
         if not is_write:
             self.tier.number_of_reads += 1
 
-        with res[0].request() as req:
+        with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, env.now))
 
@@ -97,7 +97,7 @@ class DRAMARCPolicy(Policy):
             yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
             self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
-            res[0].release(req)
+            res[self.forwarder.tiers.index(self.tier)].release(req)
 
             self.t1.__str__()
             self.t2.__str__()
@@ -119,7 +119,7 @@ class DRAMARCPolicy(Policy):
         try:
             target_tier_id = self.forwarder.tiers.index(self.tier) + 1
             # Disk is free
-            if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
+            if len(res[target_tier_id].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                 print("evict from t1 to disk %s" % packet.name)
                 yield env.process(self.forwarder.tiers[target_tier_id].write_packet_t1(env, res, packet, index=None,
                                                                                        cause='eviction'))
@@ -142,7 +142,7 @@ class DRAMARCPolicy(Policy):
         try:
             target_tier_id = self.forwarder.tiers.index(self.tier) + 1
             # Disk is free
-            if len(res[1].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
+            if len(res[target_tier_id].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
                 print("evict from t2 to disk %s" % packet.name)
                 yield env.process(
                     self.forwarder.tiers[target_tier_id].write_packet_t2(env, res, packet, True, index=None,

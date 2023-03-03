@@ -7,12 +7,9 @@ from plots.plot_creation import Plot
 from policies.ARC.abstract_arc_policy import AbstractARCPolicy
 from policies.ARC.dram_arc_policy import DRAMARCPolicy
 from policies.ARC.disk_arc_policy import DISKARCPolicy
-from policies.LRUorPriority.dram_lru_policy import DRAMLRUPolicy
-from policies.LRUorPriority.lru_policy import DISKLRUPolicy
-from policies.LFU.dram_lfu_policy import DRAMLFUPolicy
-from policies.LFU.lfu_policy import DISKLFUPolicy
-from policies.RANDOM.dram_random_policy import DRAMRandPolicy
-from policies.RANDOM.random_policy import DISKRandPolicy
+from policies.lru_policy import LRUPolicy
+from policies.lfu_policy import LFUPolicy
+from policies.random_policy import RandPolicy
 
 from traces.trace_reading.arc_trace import ARCTrace
 from traces.trace_reading.priority_trace import PriorityTrace
@@ -72,16 +69,16 @@ arc_main(AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size_propor
          output_folder)
 
 # Priority
-policy_main(DRAMLRUPolicy, DISKLRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder)
+policy_main(LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder)
 
 # LRU
-policy_main(DRAMLRUPolicy, DISKLRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main(LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
 # LFU
-policy_main(DRAMLFUPolicy, DISKLFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main(LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
 # RAND
-policy_main(DRAMRandPolicy, DISKRandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main(RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
 # output_folder = "C:/Users/lna11/Desktop/multi_tier_cache_simulator/logs/Sun_15_Jan_2023_22-50-53"
 Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)

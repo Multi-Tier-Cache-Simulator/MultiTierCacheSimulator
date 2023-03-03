@@ -60,10 +60,10 @@ def arc_main(boss_policy, dram_policy, disk_policy, slot_size, size_proportion, 
             print(f'Error %s trying to write last_results into a new file in output folder "{output_folder}"' % e)
 
 
-def policy_main(dram_policy, disk_policy, slot_size, size_proportion, total_size, trace,
+def policy_main(policy, slot_size, size_proportion, total_size, trace,
                 output_folder):
     for i in size_proportion:
-        name = dram_policy.__name__ + "_" + i.__str__() + "_" + trace.__class__.__name__
+        name = policy.__name__ + "_" + i.__str__() + "_" + trace.__class__.__name__
         name = name.replace('Policy', '')
         name = name.replace('DRAM', '')
         print("=====================================")
@@ -93,8 +93,8 @@ def policy_main(dram_policy, disk_policy, slot_size, size_proportion, total_size
         forwarder = Forwarder(env, index, tiers, pit, slot_size, default_tier_index=0)
 
         # Assign the policies
-        dram_policy(env, forwarder, dram)
-        disk_policy(env, forwarder, disk)
+        policy(env, forwarder, dram)
+        policy(env, forwarder, disk)
 
         latest_filename = "latest" + name + ".log"
         sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),

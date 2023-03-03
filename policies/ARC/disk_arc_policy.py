@@ -33,7 +33,7 @@ class DISKARCPolicy(Policy):
         self.tier.number_of_write += 1
         self.tier.used_size += packet.size
 
-        with res[1].request() as req:
+        with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, env.now))
 
@@ -41,7 +41,7 @@ class DISKARCPolicy(Policy):
             yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
             self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
-            res[1].release(req)
+            res[self.forwarder.tiers.index(self.tier)].release(req)
 
             self.t1.__str__()
             self.t2.__str__()
@@ -65,7 +65,7 @@ class DISKARCPolicy(Policy):
         self.tier.number_of_write += 1
         self.tier.used_size += packet.size
 
-        with res[1].request() as req:
+        with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s' % (self.tier.name, env.now))
 
@@ -73,7 +73,7 @@ class DISKARCPolicy(Policy):
             yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
             self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
 
-            res[1].release(req)
+            res[self.forwarder.tiers.index(self.tier)].release(req)
 
             self.t1.__str__()
             self.t2.__str__()

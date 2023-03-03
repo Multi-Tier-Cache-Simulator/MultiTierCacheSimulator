@@ -7,7 +7,7 @@ from forwarder import Forwarder
 from policies.policy import Policy
 
 
-class DISKLFUPolicy(Policy):
+class LFUPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
 
@@ -45,7 +45,19 @@ class DISKLFUPolicy(Policy):
                 self.tier.number_of_packets -= 1
                 self.tier.used_size -= old.size
 
-                print("evict from disk %s" % old.name)
+                print("evict %s from %s " % (old.name, self.tier.name))
+                try:
+                    target_tier_id = self.forwarder.tiers.index(self.tier) + 1
+                    # submission queue is not full
+                    if len(res[target_tier_id].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
+                        print("evict to disk %s" % old.name)
+                        yield env.process(
+                            self.forwarder.tiers[target_tier_id].write_packet(env, res, old, cause='eviction'))
+                    # disk is overloaded --> drop packet
+                    else:
+                        print("drop packet %s" % old.name)
+                except Exception as e:
+                    print("error : %s" % e)
 
             self.freqToKey[1][packet.name] = packet.name
             self.keyToFreq[packet.name] = 1
@@ -68,7 +80,7 @@ class DISKLFUPolicy(Policy):
             # increment number of reads
             self.tier.number_of_reads += 1
 
-        with res[1].request() as req:
+        with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
             if is_write:
@@ -84,7 +96,7 @@ class DISKLFUPolicy(Policy):
                     self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
                 self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
 
-            res[1].release(req)
+            res[self.forwarder.tiers.index(self.tier)].release(req)
             print(self.keyToVal.keys().__str__())
             self.forwarder.index.__str__()
             self.forwarder.index.__str__(what="Ghost")
