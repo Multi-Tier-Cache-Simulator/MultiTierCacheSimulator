@@ -23,7 +23,7 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 2599616880
+slot_size = 100000
 
 # turn the trace into packets
 arcTrace = ARCTrace()
@@ -58,27 +58,27 @@ except Exception as e:
 
 # 51540
 # total size 1000kB
-total_size = slot_size * 515
+total_size = slot_size * 8475
 
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
 size_proportion = [2 / 10]
 
 # modified ARC
-arc_main(AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size_proportion, total_size, arcTrace,
-         output_folder)
+# arc_main(AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size_proportion, total_size, arcTrace,
+#          output_folder)
 
 # Priority
 policy_main(LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder)
 
 # LRU
-policy_main(LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+# policy_main(LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+#
+# # LFU
+# policy_main(LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+#
+# # RAND
+# policy_main(RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
-# LFU
-policy_main(LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
-
-# RAND
-policy_main(RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
-
-# output_folder = "C:/Users/lna11/Desktop/multi_tier_cache_simulator/logs/Sun_15_Jan_2023_22-50-53"
+# output_folder = "C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/logs/Mon_06_Mar_2023_14-37-13"
 Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)

@@ -3,7 +3,7 @@ import random
 from policies.policy import Policy
 from common.packet import Packet
 from forwarder_structures.content_store.tier import Tier
-from forwarder import Forwarder
+from forwarder_structures.forwarder import Forwarder
 from simpy.core import Environment
 
 
@@ -52,7 +52,7 @@ class RandPolicy(Policy):
             # index update
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
 
-            # increment number of packets and used size
+            # increment number of writes
             self.tier.used_size += packet.size
             self.tier.number_of_packets += 1
             self.tier.number_of_write += 1
@@ -61,6 +61,9 @@ class RandPolicy(Policy):
             # increment number of reads
             self.tier.number_of_reads += 1
 
+        else:
+            raise ValueError(f"Key {packet.name} not found in cache.")
+
         with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
@@ -68,18 +71,19 @@ class RandPolicy(Policy):
                 # writing
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
             elif packet.name in self.random_struct:
                 # reading
                 yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
-
-                # update time spent reading
                 if packet.priority == 'l':
                     self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
                 else:
                     self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
                 self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+
             else:
                 raise ValueError(f"Key {packet.name} not found in cache.")
+
             res[self.forwarder.tiers.index(self.tier)].release(req)
             print(self.random_struct.keys().__str__())
             self.forwarder.index.__str__()

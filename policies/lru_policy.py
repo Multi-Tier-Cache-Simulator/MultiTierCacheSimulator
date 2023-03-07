@@ -1,10 +1,9 @@
 import math
 from collections import OrderedDict
-
 from policies.policy import Policy
 from common.packet import Packet
 from forwarder_structures.content_store.tier import Tier
-from forwarder import Forwarder
+from forwarder_structures.forwarder import Forwarder
 from simpy.core import Environment
 
 
@@ -65,6 +64,9 @@ class LRUPolicy(Policy):
             # increment number of writes
             self.tier.number_of_write += 1
 
+        else:
+            raise ValueError(f"Key {packet.name} not found in cache.")
+
         with res[self.forwarder.tiers.index(self.tier)].request() as req:
             yield req
             print('%s starting at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
@@ -72,6 +74,7 @@ class LRUPolicy(Policy):
                 # writing
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
             elif packet.name in self.lru_dict:
                 yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
                 # reading
@@ -83,6 +86,9 @@ class LRUPolicy(Policy):
                 # writing
                 yield env.timeout(self.tier.latency + packet.size / self.tier.write_throughput)
                 self.tier.time_spent_writing += self.tier.latency + packet.size / self.tier.write_throughput
+
+            else:
+                raise ValueError(f"Key {packet.name} not found in cache.")
 
             res[self.forwarder.tiers.index(self.tier)].release(req)
             print(self.lru_dict.keys().__str__())

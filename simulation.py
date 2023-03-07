@@ -5,7 +5,7 @@ from simpy.core import Environment
 
 from resources import NDN_PACKETS
 
-from forwarder import Forwarder
+from forwarder_structures.forwarder import Forwarder
 import sys
 import os
 import time

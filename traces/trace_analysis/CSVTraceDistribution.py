@@ -8,62 +8,10 @@ import pandas as pd
 
 # _COLUMN_NAMES = ("data_back", "timestamp", "name", "size", "priority", "responseTime ")
 
-def event_distribution(file_name: str, trace_len_limit=-1):
-    print(file_name)
-    with open(file_name, encoding='utf8') as read_obj:
-        csv_reader = csv.reader(read_obj, delimiter=',')
-        lines = list(csv_reader)
-
-    if trace_len_limit != -1:
-        lines = lines[0:trace_len_limit]
-
-    xi_1 = 0
-    diff = 0
-    min_period = 0
-    max_period = 0
-    min_response_time = 0
-    max_response_time = 0
-    average_response_time = 0
-
-    for line in lines:
-        if xi_1 == 0:
-            min_period = float(line[1])
-            min_response_time = float(line[5])
-            xi_1 = float(line[1])
-        else:
-            diff += float(line[1]) - xi_1
-            average_response_time += float(line[5])
-
-            if max_period < float(line[1]) - xi_1:
-                max_period = float(line[1]) - xi_1
-            if min_period > float(line[1]) - xi_1:
-                min_period = float(line[1]) - xi_1
-
-            if max_response_time < float(line[5]):
-                max_response_time = float(line[5])
-            if min_response_time > float(line[5]):
-                min_response_time = float(line[5])
-
-            xi_1 = float(line[1])
-
-    # timestamp
-    moy = diff / len(lines)
-    print("average time of event occurrence = " + moy.__str__())
-    print("minimum time before event occurrence = " + min_period.__str__())
-    print("maximum time before event occurrence = " + max_period.__str__())
-    # names
-    names = [line[2] for line in lines]
-    names = list(set(names))
-    print("number of content = " + len(names).__str__())
-    # response Time
-    art = average_response_time / len(lines)
-    print("average response time = " + art.__str__())
-    print("minimum response time = " + min_response_time.__str__())
-    print("maximum response time = " + max_response_time.__str__())
-
 
 class CSVTraceDistributions:
     def __init__(self, file_name: str):
+        self.file_name = file_name
         distributions_folder = "csv-distributions/<timestamp>"
         self.distributions_folder = distributions_folder.replace('/', os.path.sep).replace("<timestamp>",
                                                                                            time.strftime(
@@ -77,11 +25,11 @@ class CSVTraceDistributions:
         except Exception as e:
             print(f'Error %s trying to create output folder "{distributions_folder}"' % e)
 
-    def packets_distribution(self, file_name: str, trace_len_limit=-1):
+    def packets_distribution(self, trace_len_limit=-1):
         plot_x = []
         plot_y = []
 
-        with open(file_name, encoding='utf8') as read_obj:
+        with open(self.file_name, encoding='utf8') as read_obj:
             csv_reader = csv.reader(read_obj, delimiter=',')
             lines = list(csv_reader)
 
@@ -125,12 +73,12 @@ class CSVTraceDistributions:
 
         # number of data packet and number of interest packet
 
-    def size_distribution(self, file_name: str, trace_len_limit=-1):
+    def size_distribution(self, trace_len_limit=-1):
         # size
         plot_data_sizes = []
         plot_number_of_data_packets = []
 
-        with open(file_name, encoding='utf8') as read_obj:
+        with open(self.file_name, encoding='utf8') as read_obj:
             csv_reader = csv.reader(read_obj, delimiter=',')
             lines = list(csv_reader)
 
@@ -180,8 +128,8 @@ class CSVTraceDistributions:
         print("max_size = " + max_size.__str__())
         print("min size = " + min_size.__str__())
 
-    def frequency_counter(self, file_name: str, column_index: int, trace_len_limit=-1):
-        with open(file_name, encoding='utf8') as read_obj:
+    def frequency_counter(self, column_index: int, trace_len_limit=-1):
+        with open(self.file_name, encoding='utf8') as read_obj:
             reader = csv.reader(read_obj, delimiter=',')
             data = [row[column_index] for row in reader]
 
@@ -198,3 +146,56 @@ class CSVTraceDistributions:
             plt.savefig(os.path.join(self.distributions_folder, "data_freq.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{self.distributions_folder}"' % e)
+
+    def event_distribution(self, trace_len_limit=-1):
+        print(self.file_name)
+        with open(self.file_name, encoding='utf8') as read_obj:
+            csv_reader = csv.reader(read_obj, delimiter=',')
+            lines = list(csv_reader)
+
+        if trace_len_limit != -1:
+            lines = lines[0:trace_len_limit]
+
+        xi_1 = 0
+        diff = 0
+        min_period = 0
+        max_period = 0
+        min_response_time = 0
+        max_response_time = 0
+        average_response_time = 0
+
+        for line in lines:
+            if xi_1 == 0:
+                min_period = float(line[1])
+                min_response_time = float(line[5])
+                xi_1 = float(line[1])
+            else:
+                diff += float(line[1]) - xi_1
+                average_response_time += float(line[5])
+
+                if max_period < float(line[1]) - xi_1:
+                    max_period = float(line[1]) - xi_1
+                if min_period > float(line[1]) - xi_1:
+                    min_period = float(line[1]) - xi_1
+
+                if max_response_time < float(line[5]):
+                    max_response_time = float(line[5])
+                if min_response_time > float(line[5]):
+                    min_response_time = float(line[5])
+
+                xi_1 = float(line[1])
+
+        # timestamp
+        moy = diff / len(lines)
+        print("average time of event occurrence = " + moy.__str__())
+        print("minimum time before event occurrence = " + min_period.__str__())
+        print("maximum time before event occurrence = " + max_period.__str__())
+        # names
+        names = [line[2] for line in lines]
+        names = list(set(names))
+        print("number of content = " + len(names).__str__())
+        # response Time
+        art = average_response_time / len(lines)
+        print("average response time = " + art.__str__())
+        print("minimum response time = " + min_response_time.__str__())
+        print("maximum response time = " + max_response_time.__str__())

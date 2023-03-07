@@ -43,9 +43,7 @@ class PriorityTrace(Trace):
         # cache hit
         if in_index:
             tier = yield env.process(forwarder.index.get_packet_tier(name))
-            print("cache hit, read packet %s from tier %s" % (name, tier.name))
-
-            yield env.process(tier.read_packet(env, res, packet))
+            print("cache hit in tier %s, read packet %s" % (tier.name, name))
 
             # chr
             tier.chr += 1
@@ -61,6 +59,9 @@ class PriorityTrace(Trace):
                 # prefetch data to default-tier
                 yield env.process(tier.prefetch_packet(env, packet))
                 yield env.process(forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching"))
+                yield env.process(forwarder.get_default_tier().read_packet(env, res, packet))
+            else:
+                yield env.process(tier.read_packet(env, res, packet))
 
             return
 

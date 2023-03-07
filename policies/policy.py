@@ -1,5 +1,5 @@
 from forwarder_structures.content_store.tier import Tier
-from forwarder import Forwarder
+from forwarder_structures.forwarder import Forwarder
 from simpy.core import Environment
 
 
