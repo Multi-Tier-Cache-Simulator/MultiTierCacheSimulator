@@ -6,7 +6,7 @@ from simulation import Simulation
 from forwarder_structures.pit import PIT
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.content_store.index import Index
-from forwarder import Forwarder
+from forwarder_structures.forwarder import Forwarder
 
 
 def arc_main(boss_policy, dram_policy, disk_policy, slot_size, size_proportion, total_size, trace, output_folder):
