@@ -1,8 +1,10 @@
-from simpy.core import Environment
 from typing import List
-from forwarder_structures.pit import PIT
-from forwarder_structures.content_store.tier import Tier
+
+from simpy.core import Environment
+
 from forwarder_structures.content_store.index import Index
+from forwarder_structures.content_store.tier import Tier
+from forwarder_structures.pit import PIT
 
 
 class Forwarder:

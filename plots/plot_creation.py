@@ -1,6 +1,7 @@
 import json
 import os
 import time
+
 import pandas as pd
 from matplotlib import pyplot as plt
 
@@ -17,8 +18,8 @@ class Plot:
 
         try:
             os.makedirs(figure_folder, exist_ok=True)
-        except:
-            print(f'Error trying to create output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to create output folder "{figure_folder}"' % e)
 
         # plots
         plot_content_store_config = []
@@ -45,6 +46,11 @@ class Plot:
         plot_number_write_disk = []  # number of write
         plot_high_p_data_retrieval_time_disk = []  # high priority data retrieval time
         plot_low_p_data_retrieval_time_disk = []  # low priority data retrieval time
+        plot_read_throughput_disk = []  # read throughput of disk
+        # plot_average_hit_response_time = []  # rh
+        # plot_average_miss_response_time = []  # rm
+
+        plot_average_data_retrieval_time = []  # average data retrieval time
 
         # change directory to json files
         os.chdir(output_folder)
@@ -60,6 +66,9 @@ class Plot:
 
         for line in result:
             if line['tier_name'] == 'DRAM':
+                # average data retrieval time
+                plot_average_data_retrieval_time.append(line['average_data_retrieval_time'])
+
                 # chr
                 plot_cache_hit_ratio_ram.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_ram.append(
                     line['chr'] / nb_interests)
@@ -102,6 +111,13 @@ class Plot:
                 plot_penalty.append(line['penalty'])
 
             if line['tier_name'] == 'NVMe':
+                # average data retrieval time
+                plot_average_data_retrieval_time[-1] = (plot_average_data_retrieval_time[-1] + line[
+                    'average_data_retrieval_time']) / 2
+
+                # read throughput
+                plot_read_throughput_disk.append(line['read_throughput'])
+
                 # chr
                 plot_cache_hit_ratio_disk.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_disk.append(
                     line['chr'] / nb_interests)
@@ -153,8 +169,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "chr.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # chr high priority per tier
@@ -169,8 +185,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "chr_hpc.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # chr low priority per tier
@@ -185,8 +201,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "chr_lpc.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # Used size per tier
@@ -201,8 +217,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "used_size.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # waisted size
@@ -217,8 +233,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "waisted_size.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # Number of read
@@ -233,8 +249,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "read_number.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # Number of write
@@ -249,8 +265,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "write_number.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # high priority data retrieval time
@@ -266,8 +282,8 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "high_priority_data_retrieval_time.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # low priority data retrieval time
@@ -283,12 +299,12 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "low_priority_data_retrieval_time.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
         # ==================
         # penalty
-        df = pd.DataFrame(data={'penalty':plot_penalty})
+        df = pd.DataFrame(data={'penalty': plot_penalty})
         df.index = plot_content_store_config
 
         ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
@@ -299,5 +315,23 @@ class Plot:
 
         try:
             plt.savefig(os.path.join(figure_folder, "penalty.png"))
-        except:
-            print(f'Error trying to write into a new file in output folder "{figure_folder}"')
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
+
+        # ==================
+        # read throughput disk
+        df = pd.DataFrame(data={'Data Retrieval Time ': plot_average_data_retrieval_time,
+                                'Average Network Response Time': [0.3] * len(plot_average_data_retrieval_time),
+                                'Average Node Access Time': [0.001] * len(plot_average_data_retrieval_time)})
+        df.index = plot_read_throughput_disk
+
+        ax = df.plot(figsize=(17, 6), rot=0, xlabel='Read Throughput Disk (GBPS)',
+                     ylabel='Time (s)')
+        for c in ax.containers:
+            labels = [v.get_height() if v.get_height() > 0 else '' for v in c]
+            ax.bar_label(c, labels=labels, label_type='center')
+
+        try:
+            plt.savefig(os.path.join(figure_folder, "retrieval_time_per_read_throughput_disk.png"))
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)

@@ -1,11 +1,13 @@
 import math
+
+from simpy.core import Environment
+
 from common.deque import Deque
-from common.penalty import penalty_by_priority, get_alpha
-from policies.policy import Policy
 from common.packet import Packet
+from common.penalty import penalty_by_priority, get_alpha
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder
-from simpy.core import Environment
+from policies.policy import Policy
 
 
 # time is in nanoseconds

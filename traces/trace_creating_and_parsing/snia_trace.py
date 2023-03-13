@@ -1,5 +1,6 @@
-import numpy as np
 import random
+
+import numpy as np
 
 # IBM trace column names = ("timestamp", "request type", "object id", "object size", "start offset", "end offset")
 # timestamps in milliseconds

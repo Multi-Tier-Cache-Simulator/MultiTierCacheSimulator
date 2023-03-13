@@ -1,15 +1,14 @@
 import json
 import math
+import os
+import sys
+import time
+
 import simpy
 from simpy.core import Environment
 
-from resources import NDN_PACKETS
-
 from forwarder_structures.forwarder import Forwarder
-import sys
-import os
-import time
-
+from resources import NDN_PACKETS
 from traces.trace_reading.trace import Trace
 
 
@@ -35,6 +34,7 @@ class Simulation:
         for tier in self._forwarder.tiers:
             data.append({'tier_name': tier.name,
                          'max_size': tier.max_size,
+                         'read_throughput': tier.read_throughput,
                          'target_occupation': tier.target_occupation,
                          'total_size': math.trunc(tier.max_size * tier.target_occupation),
                          'used_size': tier.used_size,
@@ -50,6 +50,8 @@ class Simulation:
                          'time_spent_reading': tier.time_spent_reading,
                          'high_p_data_retrieval_time': float(tier.high_p_data_retrieval_time),
                          'low_p_data_retrieval_time': float(tier.low_p_data_retrieval_time),
+                         'average_data_retrieval_time': (float(tier.low_p_data_retrieval_time) + float(
+                             tier.high_p_data_retrieval_time)) / 2,
                          'chr': tier.chr,
                          'cmr': tier.cmr,
                          'chr_hpc': tier.chr_hpc,

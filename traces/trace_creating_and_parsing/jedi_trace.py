@@ -1,5 +1,6 @@
-import numpy as np
 import random
+
+import numpy as np
 
 trace_len_limit = 20000000
 object_priority = dict()
@@ -7,7 +8,7 @@ high_priority_content_percentage = 0.5
 last_timestamp = 0.0
 # timestamp, object_id, object_size (Kb)
 
-with open('../../resources/raw_dataset/jedi_eu.txt') as f:
+with open('../../resources/raw_dataset/jedi_eu') as f:
     with open('../../resources/dataset_jedi/eu.csv', 'w', encoding="utf-8",
               newline='') as trace_file:
         for line in f:
@@ -26,6 +27,6 @@ with open('../../resources/raw_dataset/jedi_eu.txt') as f:
                     "{},{},{},{},{},{},{}\n".format("d", timestamp, object_id, total_object_size,
                                                     object_priority[object_id], interest_lifetime, response_time))
                 last_timestamp = timestamp
-                print(last_timestamp)
-            except Exception:
+            except Exception as e:
+                print(e)
                 continue

@@ -1,14 +1,15 @@
 import math
 
+from simpy.core import Environment
+
 from common.deque import Deque
-from policies.policy import Policy
 from common.packet import Packet
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder
-from simpy.core import Environment
+from policies.policy import Policy
 
 
-class DISKARCPolicy(Policy):
+class DISKQoSARCPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
 

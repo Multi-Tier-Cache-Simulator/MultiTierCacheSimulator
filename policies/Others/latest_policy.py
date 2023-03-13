@@ -1,11 +1,13 @@
 import math
+
+from simpy.core import Environment
+
 from common.deque import Deque
-from common.penalty import penalty_by_priority, get_alpha
-from policies.policy import Policy
 from common.packet import Packet
+from common.penalty import penalty_by_priority, get_alpha
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder
-from simpy.core import Environment
+from policies.policy import Policy
 
 
 # time is in nanoseconds
@@ -26,7 +28,6 @@ class LatestPolicy(Policy):
         if self.t1 and ((in_b2 and len(self.t1) == self.p) or (len(self.t1) > self.p)):
             name, old = self.t1.get_without_pop()
             self.t1.pop()
-            self.tier.evicted_from_t1 += 1
             print("evict from t1 to b1 " + old.name)
 
             # index update

@@ -1,5 +1,6 @@
-from simpy import Environment
 from typing import Dict
+
+from simpy import Environment
 
 
 class PIT:

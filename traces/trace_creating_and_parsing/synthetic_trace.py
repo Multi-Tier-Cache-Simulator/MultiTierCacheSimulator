@@ -1,7 +1,9 @@
 import csv
-import numpy as np
-import time
 import random
+import time
+
+import numpy as np
+
 from common.packet import Packet
 from common.zipf import zipf_distribution
 

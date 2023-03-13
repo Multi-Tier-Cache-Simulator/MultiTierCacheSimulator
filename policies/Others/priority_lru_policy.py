@@ -1,12 +1,13 @@
 import math
 from collections import OrderedDict
 
-from common.penalty import penalty_by_priority
-from policies.policy import Policy
+from simpy.core import Environment
+
 from common.packet import Packet
+from common.penalty import penalty_by_priority
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder
-from simpy.core import Environment
+from policies.policy import Policy
 
 
 # if the priority of the LRUorPriority is low or the penalty is not high evict LRUorPriority

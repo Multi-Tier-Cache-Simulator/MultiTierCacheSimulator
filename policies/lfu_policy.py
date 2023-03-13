@@ -1,6 +1,8 @@
 import collections
 import math
+
 from simpy import Environment
+
 from common.packet import Packet
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder

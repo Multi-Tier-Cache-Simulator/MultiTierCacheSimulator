@@ -1,8 +1,8 @@
 import csv
 
+from common.packet import Packet
 from common.penalty import get_penalty
 from resources import NDN_PACKETS
-from common.packet import Packet
 from traces.trace_reading.trace import Trace
 
 
