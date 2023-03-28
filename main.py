@@ -7,6 +7,9 @@ from plots.plot_creation import Plot
 from policies.ARC.abstract_arc_policy import AbstractARCPolicy
 from policies.ARC.disk_arc_policy import DISKARCPolicy
 from policies.ARC.dram_arc_policy import DRAMARCPolicy
+from policies.Q_learning_QoS_ARC.abstract_ql_qos_arc_policy import AbstractQLQoSARCPolicy
+from policies.Q_learning_QoS_ARC.disk_ql_qos_arc_policy import DISKQLQoSARCPolicy
+from policies.Q_learning_QoS_ARC.dram_ql_qos_arc_policy import DRAMQLQoSARCPolicy
 from policies.QoS_ARC.abstract_qos_arc_policy import AbstractQoSARCPolicy
 from policies.QoS_ARC.disk_qos_arc_policy import DISKQoSARCPolicy
 from policies.QoS_ARC.dram_qos_arc_policy import DRAMQoSARCPolicy
@@ -25,7 +28,7 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 8000
+slot_size = 2599616880
 
 # turn the trace into packets
 arcTrace = ARCTrace()
@@ -70,6 +73,10 @@ size_proportion = [2 / 10]
 # throughput = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2]
 throughput = [2]
 
+# QL_QoS_ARC
+arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size, size_proportion, total_size,
+         throughput, arcTrace, output_folder)
+
 # QoS_ARC
 arc_main("QoS_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
          throughput, arcTrace, output_folder)
@@ -79,16 +86,16 @@ arc_main("ARC", AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size
          arcTrace, output_folder)
 
 # Priority
-policy_main(LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder)
+policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder)
 
 # LRU
-policy_main(LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 #
 # # LFU
-policy_main(LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 #
 # # RAND
-policy_main(RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
-# output_folder = "C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/logs/Mon_13_Mar_2023_10-47-26"
+# output_folder = "multi_tier_cache_simulator/logs/Mon_13_Mar_2023_10-47-26"
 Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)

@@ -9,7 +9,7 @@ from forwarder_structures.forwarder import Forwarder
 from policies.policy import Policy
 
 
-class DRAMQoSARCPolicy(Policy):
+class DRAMQLQoSARCPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
 

@@ -62,10 +62,10 @@ def arc_main(name, boss_policy, dram_policy, disk_policy, slot_size, size_propor
                 print(f'Error %s trying to write last_results into a new file in output folder "{output_folder}"' % e)
 
 
-def policy_main(policy, slot_size, size_proportion, total_size, trace,
+def policy_main(name, policy, slot_size, size_proportion, total_size, trace,
                 output_folder):
     for i in size_proportion:
-        name = policy.__name__ + "_" + i.__str__() + "_" + trace.__class__.__name__
+        name = name + "_" + i.__str__()
         name = name.replace('Policy', '')
         name = name.replace('DRAM', '')
         print("=====================================")
