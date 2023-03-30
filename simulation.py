@@ -21,7 +21,7 @@ class Simulation:
         self._logs_enabled = logs_enabled
         self._res = [simpy.Resource(env, capacity=1)
                      for _ in range(forwarder.tiers.__len__())]
-
+        self._name_lock = simpy.Resource(env, capacity=1)
         for trace in traces:
             self._env.process(self._read_trace(trace))
 
@@ -78,8 +78,11 @@ class Simulation:
             yield self._env.timeout(
                 max(0.0, t_start - last_ts))  # trace_reading are sorted by t_start order.
             last_ts = t_start
+            data_back, timestamp, name, size, priority, interest_life_time, response_time = line
+            print("=========")
+            print('interest on %s arrived at %s ' % (name, timestamp))
             self._env.process(
-                trace.read_data_line(self._env, self._res, self._forwarder, line, self._log_file, self._logs_enabled))
+                trace.read_data_line(self._env, self._name_lock, self._res, self._forwarder, line, self._log_file, self._logs_enabled))
 
         log_stream = sys.stdout
         sys.stdout = backup_stdout

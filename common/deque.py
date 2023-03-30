@@ -19,9 +19,7 @@ class Deque(object):
         return k in self.od
 
     def __index__(self, key):
-        # convert the ordered dictionary to a list
         keys = list(self.od.keys())
-        print("here", keys.__str__())
         return keys.index(key)
 
     def update(self, ti):

@@ -28,20 +28,20 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 2599616880
+slot_size = 1378116288
 
 # turn the trace into packets
 arcTrace = ARCTrace()
 # arcTrace.gen_data()
-arcTrace.gen_data(trace_len_limit=20000)
+arcTrace.gen_data(trace_len_limit=30000)
 
 priorityTrace = PriorityTrace()
 # priorityTrace.gen_data()
-priorityTrace.gen_data(trace_len_limit=20000)
+priorityTrace.gen_data(trace_len_limit=30000)
 
 trace = CommonTrace()
 # trace.gen_data()
-trace.gen_data(trace_len_limit=20000)
+trace.gen_data(trace_len_limit=30000)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -61,9 +61,9 @@ except Exception as e:
     print(f'Error trying to create output folder "{output_folder}"')
     print(e)
 
-# 51540
+# 401758 9552 9034 9677 5952
 # total size 1000kB
-total_size = slot_size * 50
+total_size = slot_size * 200
 
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
@@ -72,11 +72,11 @@ size_proportion = [2 / 10]
 # read throughput
 # throughput = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2]
 throughput = [2]
-
+#
 # QL_QoS_ARC
-arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size, size_proportion, total_size,
-         throughput, arcTrace, output_folder)
-
+# arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size, size_proportion, total_size,
+#          throughput, arcTrace, output_folder)
+#
 # QoS_ARC
 arc_main("QoS_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
          throughput, arcTrace, output_folder)
@@ -90,11 +90,11 @@ policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, pr
 
 # LRU
 policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
-#
-# # LFU
+
+# LFU
 policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
-#
-# # RAND
+
+# RAND
 policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
 
 # output_folder = "multi_tier_cache_simulator/logs/Mon_13_Mar_2023_10-47-26"

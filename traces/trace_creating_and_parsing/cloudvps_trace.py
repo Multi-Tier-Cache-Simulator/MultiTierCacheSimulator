@@ -10,7 +10,7 @@ last_timestamp = 0.0
 # timestamp, object_id, object_size (Kb)
 
 with open('../../resources/raw_dataset/jedi_eu') as f:
-    with open('../../resources/dataset_jedi/w.csv', 'w', encoding="utf-8",
+    with open('../../resources/raw_dataset/w.csv', 'w', encoding="utf-8",
               newline='') as trace_file:
         for line in f:
             split = line.split(',')

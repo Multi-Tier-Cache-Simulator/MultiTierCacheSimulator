@@ -21,9 +21,8 @@ class ARCTrace(Trace):
                 if trace_len_limit > 0:
                     self.data = self.data[:min(len(self.data), trace_len_limit)]
 
-    def read_data_line(self, env, res, forwarder, line, log_file, logs_enabled=True):
+    def read_data_line(self, env, name_lock, res, forwarder, line, log_file, logs_enabled=True):
         """Read a line, and fire events if necessary"""
-        print("=========")
         data_back, timestamp, name, size, priority, interest_life_time, response_time = line
         timestamp = float(timestamp)
         size = int(size)
@@ -37,26 +36,28 @@ class ARCTrace(Trace):
 
         # update the pit table entries by deleting the expired ones
         forwarder.pit.update_times(env)
-        print('interest on %s arrives at %s' % (name, env.now))
 
-        # index lookup
-        in_index = yield env.process(forwarder.index.cs_has_packet(name))
+        with name_lock.request() as lock:
+            yield lock
+            print('interest on %s will be processed at %s' % (name, env.now.__str__()))
+            # index lookup
+            in_index = yield env.process(forwarder.index.cs_has_packet(name))
 
-        # cache hit
-        if in_index:
-            ti = yield env.process(forwarder.index.get_packet_tier(name))
-            print("cache hit, read packet %s from tier %s" % (name, ti.name))
+            # cache hit
+            if in_index:
+                ti = yield env.process(forwarder.index.get_packet_tier(name))
+                print("cache hit, read packet %s from tier %s" % (name, ti.name))
 
-            yield env.process(tier.read_packet(env, res, packet))
+                yield env.process(tier.read_packet(env, res, packet))
 
-            # chr
-            ti.chr += 1
-            if priority == 'h':
-                ti.chr_hpc += 1
-            else:
-                if priority == 'l':
-                    ti.chr_lpc += 1
-            return
+                # chr
+                ti.chr += 1
+                if priority == 'h':
+                    ti.chr_hpc += 1
+                else:
+                    if priority == 'l':
+                        ti.chr_lpc += 1
+                return
 
         # cache miss and pit hit
         if forwarder.pit.has_name(name):

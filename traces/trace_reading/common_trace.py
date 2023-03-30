@@ -1,5 +1,7 @@
 import csv
 
+import simpy
+
 from common.packet import Packet
 from common.penalty import get_penalty
 from resources import NDN_PACKETS
@@ -21,9 +23,8 @@ class CommonTrace(Trace):
                 if trace_len_limit > 0:
                     self.data = self.data[:min(len(self.data), trace_len_limit)]
 
-    def read_data_line(self, env, res, forwarder, line, log_file, logs_enabled=True):
+    def read_data_line(self, env, name_lock, res, forwarder, line, log_file, logs_enabled=True):
         """Read a line, and fire events if necessary"""
-        print("=========")
         data_back, timestamp, name, size, priority, interest_life_time, response_time = line
         timestamp = float(timestamp)
         size = int(size)
@@ -35,41 +36,35 @@ class CommonTrace(Trace):
 
         # update the pit table entries by deleting the expired ones
         forwarder.pit.update_times(env)
-        print('interest on ' + name + ' arrives at ' + env.now.__str__())
 
-        # index lookup
-        in_index = yield env.process(forwarder.index.cs_has_packet(name))
+        with name_lock.request() as lock:
+            yield lock
+            print('interest on %s will be processed at %s' % (name, env.now.__str__()))
+            # index lookup
+            in_index = yield env.process(forwarder.index.cs_has_packet(name))
 
-        # cache hit
-        if in_index:
-            tier = yield env.process(forwarder.index.get_packet_tier(name))
-            print("cache hit, read packet %s from tier %s" % (name, tier.name))
+            # cache hit
+            if in_index:
+                tier = yield env.process(forwarder.index.get_packet_tier(name))
+                print("cache hit, read packet %s from tier %s" % (name, tier.name))
 
-            yield env.process(tier.read_packet(env, res, packet))
+                yield env.process(tier.read_packet(env, res, packet))
 
-            # chr
-            tier.chr += 1
-            if priority == 'h':
-                tier.chr_hpc += 1
-            else:
-                if priority == 'l':
-                    tier.chr_lpc += 1
+                # chr
+                tier.chr += 1
+                if priority == 'h':
+                    tier.chr_hpc += 1
+                else:
+                    if priority == 'l':
+                        tier.chr_lpc += 1
 
-            # data in disk
-            if tier.name.__str__() != forwarder.get_default_tier().name.__str__():
-                print("prefetch data to default tier " + forwarder.get_default_tier().name.__str__())
-                # prefetch data to default-tier
-                yield env.process(tier.prefetch_packet(env, packet))
-                yield env.process(forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching"))
-
-            #     # read data from dram
-            #     print("read from dram")
-            #     yield env.process(forwarder.get_default_tier().read_packet(env, res, packet))
-            # # data in dram
-            # else:
-            #     print("read from dram")
-            #     yield env.process(forwarder.get_default_tier().read_packet(env, res, packet))
-            return
+                # data in disk
+                if tier.name.__str__() != forwarder.get_default_tier().name.__str__():
+                    print("prefetch data to default tier " + forwarder.get_default_tier().name.__str__())
+                    # prefetch data to default-tier
+                    yield env.process(tier.prefetch_packet(env, packet))
+                    yield env.process(forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching"))
+                return
 
         # cache miss and pit hit
         if forwarder.pit.has_name(name):

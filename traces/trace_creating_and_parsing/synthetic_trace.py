@@ -42,7 +42,7 @@ class TraceCreator:
             packet = Packet("d", 0, i.__str__(), size, priority)
             unique_words[i] = packet
 
-        with open('../resources/dataset_jedi/synthetic-'
+        with open('../resources/dataset_synthetic/synthetic-'
                   + n_unique_items.__str__() + "_" + poisson_lambda.__str__()
                   + "_" + zipf_alpha.__str__() + "_" + high_priority_content_percentage.__str__()
                   + "_" + traffic_period.__str__() + '.csv',

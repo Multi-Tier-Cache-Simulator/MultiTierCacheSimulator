@@ -51,7 +51,7 @@ def arc_main(name, boss_policy, dram_policy, disk_policy, slot_size, size_propor
 
             latest_filename = "latest" + name + ".log"
             sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
-                             logs_enabled=True)
+                             logs_enabled=False)
             print("Starting simulation")
             last_results_filename = name + ".txt"
             last_results = sim.run()
@@ -100,7 +100,7 @@ def policy_main(name, policy, slot_size, size_proportion, total_size, trace,
 
         latest_filename = "latest" + name + ".log"
         sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
-                         logs_enabled=True)
+                         logs_enabled=False)
         print("Starting simulation")
         last_results_filename = name + ".txt"
         last_results = sim.run()

@@ -11,7 +11,7 @@ class Trace:
     def gen_data(self, trace_len_limit=-1):
         raise NotImplementedError("Using unspecialized trace class.")
 
-    def read_data_line(self, env, res, forwarder, line, log_file, logs_enabled=True):
+    def read_data_line(self, env, name_lock, res, forwarder, line, log_file, logs_enabled=True):
         raise NotImplementedError("Using unspecialized trace class.")
 
     @property

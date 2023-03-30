@@ -21,9 +21,8 @@ class PriorityTrace(Trace):
                 if trace_len_limit > 0:
                     self.data = self.data[:min(len(self.data), trace_len_limit)]
 
-    def read_data_line(self, env, res, forwarder, line, log_file, logs_enabled=True):
+    def read_data_line(self, env, name_lock, res, forwarder, line, log_file, logs_enabled=True):
         """Read a line, and fire events if necessary"""
-        print("=========")
         data_back, timestamp, name, size, priority, interest_life_time, response_time = line
         timestamp = float(timestamp)
         size = int(size)
@@ -35,35 +34,35 @@ class PriorityTrace(Trace):
 
         # update the pit table entries by deleting the expired ones
         forwarder.pit.update_times(env)
-        print('interest on %s arrives at %s' % (name, env.now))
 
-        # index lookup
-        in_index = yield env.process(forwarder.index.cs_has_packet(name))
+        with name_lock.request() as lock:
+            yield lock
+            print('interest on %s will be processed at %s' % (name, env.now.__str__()))
+            # index lookup
+            in_index = yield env.process(forwarder.index.cs_has_packet(name))
 
-        # cache hit
-        if in_index:
-            tier = yield env.process(forwarder.index.get_packet_tier(name))
-            print("cache hit in tier %s, read packet %s" % (tier.name, name))
+            # cache hit
+            if in_index:
+                tier = yield env.process(forwarder.index.get_packet_tier(name))
+                print("cache hit in tier %s, read packet %s" % (tier.name, name))
 
-            # chr
-            tier.chr += 1
-            if priority == 'h':
-                tier.chr_hpc += 1
-            else:
-                if priority == 'l':
-                    tier.chr_lpc += 1
-
-            # if the priority is high and the tier is not the default-tier prefetch to default-tier
-            if priority == 'h' and tier.name.__str__() != forwarder.get_default_tier().name:
-                print("prefetch data %s to default tier %s " % (name, forwarder.get_default_tier().name))
-                # prefetch data to default-tier
-                yield env.process(tier.prefetch_packet(env, packet))
-                yield env.process(forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching"))
-                yield env.process(forwarder.get_default_tier().read_packet(env, res, packet))
-            else:
                 yield env.process(tier.read_packet(env, res, packet))
 
-            return
+                # chr
+                tier.chr += 1
+                if priority == 'h':
+                    tier.chr_hpc += 1
+                else:
+                    if priority == 'l':
+                        tier.chr_lpc += 1
+
+                # if the priority is high and the tier is not the default-tier prefetch to default-tier
+                if priority == 'h' and tier.name.__str__() != forwarder.get_default_tier().name:
+                    print("prefetch data %s to default tier %s " % (name, forwarder.get_default_tier().name))
+                    # prefetch data to default-tier
+                    yield env.process(tier.prefetch_packet(env, packet))
+                    yield env.process(forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching"))
+                return
 
         # cache miss and pit hit
         if forwarder.pit.has_name(name):
