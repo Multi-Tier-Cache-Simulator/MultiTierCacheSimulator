@@ -68,8 +68,10 @@ class AbstractQoSARCPolicy(Policy):
                 yield env.process(self.t2_append_left(env, res, packet, False))
             else:
                 print("%s hit in t2, low priority, write to index in t2" % packet.name)
+                current_pos = self.t2.__index__(packet.name)
+                new_pos = int(max(self.c-self.p, current_pos+round(len(self.t2) / get_alpha())))
                 self.t2_remove(packet)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False))
+                yield env.process(self.t2_append_by_index(env, res, packet,new_pos , False))
             # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -151,8 +153,7 @@ class AbstractQoSARCPolicy(Policy):
             yield env.process(self.t1_append_left(env, res, packet))
         else:
             print("%s low priority, write to index in t1" % packet.name)
-            index = round(len(self.t1) / get_alpha())
-            yield env.process(self.t1_append_by_index(env, res, packet, index))
+            yield env.process(self.t1_append_by_index(env, res, packet, round(len(self.t1) / get_alpha())))
         # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
         self.t1.__str__()
@@ -256,7 +257,7 @@ class AbstractQoSARCPolicy(Policy):
 
     def t1_append_by_index(self, env, res, packet, index):
         self.t1.append_by_index(index, packet.name, packet)
-        print("index = %s" % index)
+        print("new global pos is = %s" % index)
         n = len(self.forwarder.tiers)
         s = []
         for tier in self.forwarder.tiers:
@@ -266,12 +267,12 @@ class AbstractQoSARCPolicy(Policy):
         while i > 1 and index >= s[i]:
             index -= s[i]
             i -= 1
-        print("write to %s at index = %s" % (self.forwarder.tiers[i].name, index))
+        print("write to %s at pos = %s" % (self.forwarder.tiers[i].name, index))
         yield env.process(self.forwarder.tiers[i].write_packet_t1(env, res, packet, index))
 
     def t2_append_by_index(self, env, res, packet, index, is_write: bool):
         self.t2.append_by_index(index, packet.name, packet)
-        print("index = %s" % index)
+        print("new global pos is = %s" % index)
         n = len(self.forwarder.tiers)
         s = []
         for tier in self.forwarder.tiers:
@@ -281,7 +282,7 @@ class AbstractQoSARCPolicy(Policy):
         while i > 1 and index >= s[i]:
             index -= s[i]
             i -= 1
-        print("write to %s at index = %s" % (self.forwarder.tiers[i].name, index))
+        print("write to %s at pos = %s" % (self.forwarder.tiers[i].name, index))
         yield env.process(self.forwarder.tiers[i].write_packet_t2(env, res, packet, is_write, index))
 
     def increment_p(self, len_b1, len_b2):

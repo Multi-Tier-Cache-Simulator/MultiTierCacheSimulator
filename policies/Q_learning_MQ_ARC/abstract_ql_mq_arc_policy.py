@@ -7,7 +7,7 @@ from common.packet import Packet
 from common.penalty import get_alpha
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder
-from policies.Q_learning_QoS_ARC.q_learning_agent import QLearningAgent
+from policies.Q_learning_MQ_ARC.q_learning_agent import QLearningAgent
 from policies.policy import Policy
 
 

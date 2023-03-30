@@ -22,7 +22,7 @@ class DISKQoSARCPolicy(Policy):
     def on_packet_access_t1(self, env: Environment, res, packet: Packet, index=None):
         print('%s arriving at %s for %s' % (self.tier.name, env.now, packet.name))
 
-        if index:
+        if index is not None:
             self.t1.append_by_index(index, packet.name, packet)
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
         else:
@@ -54,7 +54,7 @@ class DISKQoSARCPolicy(Policy):
     def on_packet_access_t2(self, env: Environment, res, packet: Packet, is_write: bool, index=None):
         print('%s arriving at %s for %s' % (self.tier.name, env.now, packet.name))
 
-        if index:
+        if index is not None:
             self.t2.append_by_index(index, packet.name, packet)
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
         else:

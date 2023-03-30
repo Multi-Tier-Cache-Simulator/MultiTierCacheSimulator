@@ -10,7 +10,7 @@ def penalty_by_priority():
 
 
 def get_alpha():
-    return 1.5
+    return 3
 
 
 def get_penalty(response_time, priority) -> int:

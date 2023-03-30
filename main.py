@@ -7,12 +7,12 @@ from plots.plot_creation import Plot
 from policies.ARC.abstract_arc_policy import AbstractARCPolicy
 from policies.ARC.disk_arc_policy import DISKARCPolicy
 from policies.ARC.dram_arc_policy import DRAMARCPolicy
-from policies.Q_learning_QoS_ARC.abstract_ql_qos_arc_policy import AbstractQLQoSARCPolicy
-from policies.Q_learning_QoS_ARC.disk_ql_qos_arc_policy import DISKQLQoSARCPolicy
-from policies.Q_learning_QoS_ARC.dram_ql_qos_arc_policy import DRAMQLQoSARCPolicy
-from policies.QoS_ARC.abstract_qos_arc_policy import AbstractQoSARCPolicy
-from policies.QoS_ARC.disk_qos_arc_policy import DISKQoSARCPolicy
-from policies.QoS_ARC.dram_qos_arc_policy import DRAMQoSARCPolicy
+from policies.Q_learning_MQ_ARC.abstract_ql_mq_arc_policy import AbstractQLQoSARCPolicy
+from policies.Q_learning_MQ_ARC.disk_ql_mq_arc_policy import DISKQLQoSARCPolicy
+from policies.Q_learning_MQ_ARC.dram_ql_mq_arc_policy import DRAMQLQoSARCPolicy
+from policies.MQ_ARC.abstract_mq_arc_policy import AbstractQoSARCPolicy
+from policies.MQ_ARC.disk_mq_arc_policy import DISKQoSARCPolicy
+from policies.MQ_ARC.dram_mq_arc_policy import DRAMQoSARCPolicy
 from policies.lfu_policy import LFUPolicy
 from policies.lru_policy import LRUPolicy
 from policies.random_policy import RandPolicy
@@ -28,20 +28,21 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 1378116288
+slot_size = 8000
+# slot_size = 1378116288
 
 # turn the trace into packets
 arcTrace = ARCTrace()
-# arcTrace.gen_data()
-arcTrace.gen_data(trace_len_limit=30000)
+arcTrace.gen_data()
+# arcTrace.gen_data(trace_len_limit=30000)
 
 priorityTrace = PriorityTrace()
-# priorityTrace.gen_data()
-priorityTrace.gen_data(trace_len_limit=30000)
+priorityTrace.gen_data()
+# priorityTrace.gen_data(trace_len_limit=30000)
 
 trace = CommonTrace()
-# trace.gen_data()
-trace.gen_data(trace_len_limit=30000)
+trace.gen_data()
+# trace.gen_data(trace_len_limit=30000)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -63,8 +64,9 @@ except Exception as e:
 
 # 401758 9552 9034 9677 5952
 # total size 1000kB
-total_size = slot_size * 200
-
+# total_size = slot_size * 595
+total_size = [slot_size * 34]
+#
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
 size_proportion = [2 / 10]
@@ -77,8 +79,8 @@ throughput = [2]
 # arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size, size_proportion, total_size,
 #          throughput, arcTrace, output_folder)
 #
-# QoS_ARC
-arc_main("QoS_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
+# MQ_ARC
+arc_main("MQ_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
          throughput, arcTrace, output_folder)
 
 # ARC

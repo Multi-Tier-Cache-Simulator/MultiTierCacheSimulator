@@ -1,8 +1,8 @@
-from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
-
-filename = "../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv"
-cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part0", 30000)
-cSVTraceDistributions.distributions()
+# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+#
+# filename = "../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv"
+# cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part0", 30000)
+# cSVTraceDistributions.distributions()
 
 #
 # import csv
@@ -62,7 +62,7 @@ cSVTraceDistributions.distributions()
 #
 # # plt.plot(q_arc.p_table[:1000])
 # # plt.show()
-# from traces.trace_creating_and_parsing.synthetic_trace import TraceCreator
-# traceCreator = TraceCreator(n_unique_items=10, high_priority_content_percentage=0.2, zipf_alpha=2.0,
-#                             poisson_lambda=1000, min_data_size=100, max_data_size=8000, min_data_rtt=0.01,
-#                             max_data_rtt=0.2, interest_lifetime=2, traffic_period=10)
+from traces.trace_creating_and_parsing.synthetic_trace import TraceCreator
+traceCreator = TraceCreator(n_unique_items=10000, high_priority_content_percentage=0.2, zipf_alpha=2.0,
+                            poisson_lambda=100, min_data_size=100, max_data_size=8000, min_data_rtt=0.01,
+                            max_data_rtt=0.2, interest_lifetime=4, traffic_period=5)
