@@ -64,12 +64,12 @@ class PriorityTrace(Trace):
                     yield env.process(forwarder.get_default_tier().write_packet(env, res, packet, cause="prefetching"))
                 return
 
-        # cache miss and pit hit
-        if forwarder.pit.has_name(name):
-            print("cache miss, pit hit")
-            forwarder.pit.add_entry(name, env.now + interest_life_time)
-            forwarder.nAggregation += 1
-            return
+            # cache miss and pit hit
+            if forwarder.pit.has_name(name):
+                print("cache miss, pit hit")
+                forwarder.pit.add_entry(name, env.now + interest_life_time)
+                forwarder.nAggregation += 1
+                return
 
         # cache miss and pit miss
         print("cache miss, pit miss")
@@ -85,31 +85,33 @@ class PriorityTrace(Trace):
         print("%s data is on its way" % name)
         yield env.timeout(response_time)
 
-        print("///////////")
-        print('%s data arrives at %s ' % (name, env.now))
+        with name_lock.request() as lock:
+            yield lock
+            print("///////////")
+            print('%s data arrives at %s ' % (name, env.now))
 
-        if not forwarder.pit.has_name(name):
-            print("%s data already came" % name)
-            return
+            if not forwarder.pit.has_name(name):
+                print("%s data already came" % name)
+                return
 
-        if forwarder.pit.retrieve_entry(name) < env.now:
-            print("interest on %s expired" % name)
+            if forwarder.pit.retrieve_entry(name) < env.now:
+                print("interest on %s expired" % name)
+                forwarder.pit.delete_entry(name)
+                return
+
+            # delete pit entry
             forwarder.pit.delete_entry(name)
-            return
-
-        # delete pit entry
-        forwarder.pit.delete_entry(name)
-        in_index = yield env.process(forwarder.index.cs_has_packet(name))
-        if in_index:
-            print("%s data already in cs" % name)
-        else:
-            # write data
-            if packet.priority == "h":
-                print("%s high priority, write to default-tier" % packet.name)
-                yield env.process(forwarder.get_default_tier().write_packet(env, res, packet))
+            in_index = yield env.process(forwarder.index.cs_has_packet(name))
+            if in_index:
+                print("%s data already in cs" % name)
             else:
-                print("%s low priority, write to lower-tier" % packet.name)
-                yield env.process(forwarder.get_last_tier().write_packet(env, res, packet))
+                # write data
+                if packet.priority == "h":
+                    print("%s high priority, write to default-tier" % packet.name)
+                    yield env.process(forwarder.get_default_tier().write_packet(env, res, packet))
+                else:
+                    print("%s low priority, write to lower-tier" % packet.name)
+                    yield env.process(forwarder.get_last_tier().write_packet(env, res, packet))
 
     @property
     def column_names(self):

@@ -5,7 +5,7 @@ import csv
 
 
 class CSVTraceDistributions:
-    def __init__(self, file_name: str, name: str, trace_len_limit:int):
+    def __init__(self, file_name: str, name: str, trace_len_limit: int):
         self.file_name = file_name
         self.name = name
         self.trace_len_limit = trace_len_limit
@@ -18,7 +18,8 @@ class CSVTraceDistributions:
             csv_reader = csv.reader(read_obj, delimiter=',')
             lines = list(csv_reader)
 
-        lines = lines[:min(len(lines), self.trace_len_limit)]
+        if self.trace_len_limit != -1:
+            lines = lines[:min(len(lines), self.trace_len_limit)]
 
         # trace length
         trace_len = len(lines)

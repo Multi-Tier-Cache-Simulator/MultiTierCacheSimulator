@@ -28,7 +28,7 @@ if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
 # slot size allocation in dram and nvme
-slot_size = 8000
+slot_size = 2599616880
 # slot_size = 1378116288
 
 # turn the trace into packets
@@ -65,7 +65,7 @@ except Exception as e:
 # 401758 9552 9034 9677 5952
 # total size 1000kB
 # total_size = slot_size * 595
-total_size = [slot_size * 34]
+total_size = [slot_size * 11186 * 0.3]
 #
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
@@ -75,10 +75,9 @@ size_proportion = [2 / 10]
 # throughput = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2]
 throughput = [2]
 #
-# QL_QoS_ARC
-# arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size, size_proportion, total_size,
-#          throughput, arcTrace, output_folder)
-#
+# # QL_QoS_ARC arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size,
+# size_proportion, total_size, throughput, arcTrace, output_folder)
+
 # MQ_ARC
 arc_main("MQ_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
          throughput, arcTrace, output_folder)

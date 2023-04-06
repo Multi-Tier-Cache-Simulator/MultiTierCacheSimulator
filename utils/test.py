@@ -1,8 +1,8 @@
-# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
-#
-# filename = "../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv"
-# cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part0", 30000)
-# cSVTraceDistributions.distributions()
+from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+
+filename = "../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv"
+cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part0", -1)
+cSVTraceDistributions.distributions()
 
 #
 # import csv
@@ -61,8 +61,8 @@
 #                 # print("arc cache hit ratio = %s" % chr)
 #
 # # plt.plot(q_arc.p_table[:1000])
-# # plt.show()
-from traces.trace_creating_and_parsing.synthetic_trace import TraceCreator
-traceCreator = TraceCreator(n_unique_items=10000, high_priority_content_percentage=0.2, zipf_alpha=2.0,
-                            poisson_lambda=100, min_data_size=100, max_data_size=8000, min_data_rtt=0.01,
-                            max_data_rtt=0.2, interest_lifetime=4, traffic_period=5)
+# # # plt.show()
+# from traces.trace_creating_and_parsing.synthetic_trace import TraceCreator
+# traceCreator = TraceCreator(n_unique_items=10000, high_priority_content_percentage=0.5, zipf_alpha=1.0,
+#                             poisson_lambda=10, min_data_size=100, max_data_size=8000, min_data_rtt=0.01,
+#                             max_data_rtt=0.2, interest_lifetime=4, traffic_period=180)

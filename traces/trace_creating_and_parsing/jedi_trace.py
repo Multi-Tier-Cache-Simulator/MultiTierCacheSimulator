@@ -39,7 +39,7 @@ object_priority = []
 high_priority_content_percentage = 0.5
 last_timestamp = 0.0
 
-with open('../../resources/raw_dataset/eu_1000000_5') as f, open('../../resources/eu_1000000_5.csv', 'w', encoding="utf-8", newline='') as trace_file:
+with open('../../resources/raw_dataset/eu_1000000_5') as f, open('../../resources/raw_dataset/eu_1000000_5.csv', 'w', encoding="utf-8", newline='') as trace_file:
     writer = csv.writer(trace_file)
     for line in f:
         split = line.strip().split(',')
