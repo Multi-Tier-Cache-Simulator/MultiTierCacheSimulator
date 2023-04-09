@@ -59,12 +59,13 @@ class ARCTrace(Trace):
                         ti.chr_lpc += 1
                 return
 
-            # cache miss and pit hit
-            if forwarder.pit.has_name(name):
-                print("cache miss, pit hit")
-                forwarder.pit.add_entry(name, env.now + interest_life_time)
-                forwarder.nAggregation += 1
-                return
+        # cache miss and pit hit
+        if forwarder.pit.has_name(name):
+            print("cache miss, pit hit")
+            forwarder.pit.add_entry(name, env.now + interest_life_time)
+            forwarder.nAggregation += 1
+            forwarder.get_default_tier().cmr += 1
+            return
 
         # cache miss and pit miss
         print("cache miss, pit miss")

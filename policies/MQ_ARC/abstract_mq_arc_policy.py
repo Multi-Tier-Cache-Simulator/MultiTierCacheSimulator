@@ -51,7 +51,8 @@ class AbstractQoSARCPolicy(Policy):
             else:
                 print("%s hit in t1, low priority, write to index in t2" % packet.name)
                 self.t1_remove(packet)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False))
+                global_pos = max(round(len(self.t2) / get_alpha()), len(self.t2) - round(len(self.t2) / get_alpha()))
+                yield env.process(self.t2_append_by_index(env, res, packet, global_pos, False))
             # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -69,9 +70,9 @@ class AbstractQoSARCPolicy(Policy):
             else:
                 print("%s hit in t2, low priority, write to index in t2" % packet.name)
                 current_pos = self.t2.__index__(packet.name)
-                new_pos = int(max(self.c-self.p, current_pos+round(len(self.t2) / get_alpha())))
+                new_pos = int(min(self.c - self.p, current_pos + round(len(self.t2) / get_alpha())))
                 self.t2_remove(packet)
-                yield env.process(self.t2_append_by_index(env, res, packet,new_pos , False))
+                yield env.process(self.t2_append_by_index(env, res, packet, new_pos, False))
             # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -93,7 +94,8 @@ class AbstractQoSARCPolicy(Policy):
                 yield env.process(self.t2_append_left(env, res, packet, True))
             else:
                 print("%s hit in b1, low priority, write to index in t2" % packet.name)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True))
+                global_pos = max(round(len(self.t2) / get_alpha()), len(self.t2) - round(len(self.t2) / get_alpha()))
+                yield env.process(self.t2_append_by_index(env, res, packet, global_pos, True))
             # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -115,7 +117,8 @@ class AbstractQoSARCPolicy(Policy):
                 yield env.process(self.t2_append_left(env, res, packet, True))
             else:
                 print("%s hit in b2, low priority, write to index in t2" % packet.name)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True))
+                global_pos = max(round(len(self.t2) / get_alpha()), len(self.t2) - round(len(self.t2) / get_alpha()))
+                yield env.process(self.t2_append_by_index(env, res, packet, global_pos, True))
             # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
             self.t1.__str__()
@@ -153,7 +156,8 @@ class AbstractQoSARCPolicy(Policy):
             yield env.process(self.t1_append_left(env, res, packet))
         else:
             print("%s low priority, write to index in t1" % packet.name)
-            yield env.process(self.t1_append_by_index(env, res, packet, round(len(self.t1) / get_alpha())))
+            global_pos = max(round(len(self.t1) / get_alpha()), len(self.t1) - round(len(self.t1) / get_alpha()))
+            yield env.process(self.t1_append_by_index(env, res, packet, global_pos))
         # yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
 
         self.t1.__str__()

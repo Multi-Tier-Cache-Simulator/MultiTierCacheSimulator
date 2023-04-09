@@ -168,7 +168,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "chr.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_chr.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -184,7 +184,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "chr_hpc.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"chr_hpc.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -200,7 +200,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "chr_lpc.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_chr_lpc.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -216,7 +216,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "used_size.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_used_size.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -232,7 +232,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "waisted_size.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_waisted_size.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -248,7 +248,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "read_number.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_read_number.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -264,7 +264,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "write_number.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_write_number.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -281,7 +281,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "high_priority_data_retrieval_time.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_high_priority_data_retrieval_time.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -298,7 +298,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "low_priority_data_retrieval_time.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_low_priority_data_retrieval_time.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -314,7 +314,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "penalty.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_penalty.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -332,6 +332,6 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, "retrieval_time_per_read_throughput_disk.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_retrieval_time_per_read_throughput_disk.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
