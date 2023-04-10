@@ -1,7 +1,7 @@
 from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
 
 filename = "../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv"
-cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part0", -1)
+cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part030000", 30000)
 cSVTraceDistributions.distributions()
 
 #

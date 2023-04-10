@@ -10,7 +10,7 @@ from simulation import Simulation
 
 
 def arc_main(name, boss_policy, dram_policy, disk_policy, slot_size, size_proportion, total_size, throughput, trace,
-             output_folder):
+             output_folder, logs_enabled):
     for i in size_proportion:
         for j in throughput:
             for k in total_size:
@@ -53,7 +53,7 @@ def arc_main(name, boss_policy, dram_policy, disk_policy, slot_size, size_propor
 
                 latest_filename = "latest" + name + ".log"
                 sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
-                                 logs_enabled=False)
+                                 logs_enabled=logs_enabled)
                 print("Starting simulation")
                 last_results_filename = name + ".txt"
                 last_results = sim.run()
@@ -65,7 +65,7 @@ def arc_main(name, boss_policy, dram_policy, disk_policy, slot_size, size_propor
                         f'Error %s trying to write last_results into a new file in output folder "{output_folder}"' % e)
 
 
-def policy_main(name, policy, slot_size, size_proportion, total_size, trace, output_folder):
+def policy_main(name, policy, slot_size, size_proportion, total_size, trace, output_folder, logs_enabled):
     for i in size_proportion:
         for k in total_size:
             name = name + "_" + i.__str__() + "_" + k.__str__()
@@ -104,7 +104,7 @@ def policy_main(name, policy, slot_size, size_proportion, total_size, trace, out
 
             latest_filename = "latest" + name + ".log"
             sim = Simulation([trace], forwarder, env, log_file=os.path.join(output_folder, latest_filename),
-                             logs_enabled=True)
+                             logs_enabled=logs_enabled)
             print("Starting simulation")
             last_results_filename = name + ".txt"
             last_results = sim.run()

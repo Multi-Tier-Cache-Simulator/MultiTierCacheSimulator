@@ -23,7 +23,7 @@ class DRAMQoSARCPolicy(Policy):
         print('%s arriving at %s' % (self.tier.name, env.now))
 
         # if cache full, send data to disk
-        if len(self.t1) + len(self.t2) >= self.c:
+        if len(self.t1) + len(self.t2) > self.c:
             # if len of T1 is higher than P move from T1 dram to T1 disk
             if len(self.t1) > self.p:
                 yield env.process(self.send_to_next_level_t1(env, res))
@@ -32,7 +32,7 @@ class DRAMQoSARCPolicy(Policy):
                 yield env.process(self.send_to_next_level_t2(env, res))
             else:
                 yield env.process(self.send_to_next_level_t1(env, res))
-        print("index = %s " % index)
+
         if index is not None:
             print('insert into %s at pos :%s' % (self.tier.name, index))
             self.t1.append_by_index(index, packet.name, packet)
@@ -67,9 +67,10 @@ class DRAMQoSARCPolicy(Policy):
     def on_packet_access_t2(self, env, res, packet: Packet, is_write: bool, index=None):
         print('%s arriving at %s' % (self.tier.name, env.now))
 
-        if len(self.t1) + len(self.t2) >= self.c:
+        if len(self.t1) + len(self.t2) > self.c:
             if len(self.t1) > self.p:
                 yield env.process(self.send_to_next_level_t1(env, res))
+            # move from T2 dram to T2 disk
             elif self.t2:
                 yield env.process(self.send_to_next_level_t2(env, res))
             else:

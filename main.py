@@ -50,6 +50,7 @@ nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
 nb_low_priority = [line for line in trace.data if line[4] == 'l'].__len__()
 # total number of requests
 nb_interests = len(trace.data)
+print("nb_high_priority %s, nb_low_priority %s, nb_interests %s" %(nb_high_priority,nb_low_priority, nb_interests ))
 
 # log files
 output_folder = "logs/<timestamp>"
@@ -65,7 +66,7 @@ except Exception as e:
 # 401758 9552 9034 9677 5952
 # total size 1000kB
 # total_size = slot_size * 595
-total_size = [slot_size * 11186 * 0.3]
+total_size = [slot_size * 11186 * 0.001]
 #
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
@@ -80,23 +81,23 @@ throughput = [2]
 
 # MQ_ARC
 arc_main("MQ_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
-         throughput, arcTrace, output_folder)
+         throughput, arcTrace, output_folder, False)
 
 # ARC
 arc_main("ARC", AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size_proportion, total_size, throughput,
-         arcTrace, output_folder)
+         arcTrace, output_folder, False)
 
 # Priority
-policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder)
+policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder, False)
 
 # LRU
-policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
 # LFU
-policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
 # RAND
-policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder)
+policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
 # output_folder = "multi_tier_cache_simulator/logs/Mon_13_Mar_2023_10-47-26"
 Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)
