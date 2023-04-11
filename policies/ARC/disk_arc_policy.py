@@ -18,7 +18,36 @@ class DISKARCPolicy(Policy):
         self.t1 = Deque()  # T1: recent cache entries
         self.t2 = Deque()  # T2: frequent entries
 
-    def on_packet_access_t1(self, env: Environment, res, packet: Packet, index=None):
+    def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool, cause=None):
+        print('%s arriving at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+
+        if packet.name in self.t1 or packet.name in self.t2:
+            # increment number of reads
+            self.tier.number_of_reads += 1
+        else:
+            raise ValueError(f"Key {packet.name} not found in cache.")
+
+        with res[self.forwarder.tiers.index(self.tier)].request() as req:
+            yield req
+            print('%s starting at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+            if packet.name in self.t1 or packet.name in self.t2:
+                yield env.timeout(self.tier.latency + packet.size / self.tier.read_throughput)
+                # reading
+                if packet.priority == 'l':
+                    self.tier.low_p_data_retrieval_time += env.now - packet.timestamp
+                else:
+                    self.tier.high_p_data_retrieval_time += env.now - packet.timestamp
+                self.tier.time_spent_reading += self.tier.latency + packet.size / self.tier.read_throughput
+            else:
+                raise ValueError(f"Key {packet.name} not found in cache.")
+
+            self.t1.__str__()
+            self.t2.__str__()
+            self.forwarder.index.__str__()
+            self.forwarder.index.__str__(what="Ghost")
+            print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
+
+    def on_packet_access_t1(self, env: Environment, res, packet: Packet, index=-1):
         print('%s arriving at %s for %s' % (self.tier.name, env.now, packet.name))
 
         self.t1.append_left(packet.name, packet)
@@ -46,7 +75,7 @@ class DISKARCPolicy(Policy):
             print('%s leaving the resource at %s' % (self.tier.name, env.now))
             return
 
-    def on_packet_access_t2(self, env: Environment, res, packet: Packet, is_write: bool, index=None):
+    def on_packet_access_t2(self, env: Environment, res, packet: Packet, index=-1):
         print('%s arriving at %s for %s' % (self.tier.name, env.now, packet.name))
 
         self.t2.append_left(packet.name, packet)

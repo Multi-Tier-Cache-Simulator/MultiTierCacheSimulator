@@ -66,7 +66,7 @@ class Tier:
             else:
                 raise RuntimeError(f'Unknown cause {cause}. Expected "eviction", "prefetching" or None')
 
-    def write_packet_t1(self, env, res, packet, index=None, cause=None):
+    def write_packet_t1(self, env, res, packet, index=-1, cause=None):
         for strategy in self.strategies:
             yield env.process(strategy.on_packet_access_t1(env, res, packet, index))
         if cause is not None:
@@ -77,9 +77,9 @@ class Tier:
             else:
                 raise RuntimeError(f'Unknown cause {cause}. Expected "eviction", "prefetching" or None')
 
-    def write_packet_t2(self, env, res, packet, is_write, index=None, cause=None):
+    def write_packet_t2(self, env, res, packet, index=-1, cause=None):
         for strategy in self.strategies:
-            yield env.process(strategy.on_packet_access_t2(env, res, packet, is_write, index))
+            yield env.process(strategy.on_packet_access_t2(env, res, packet, index))
         if cause is not None:
             if cause == "eviction":
                 self.number_of_eviction_to_this_tier += 1

@@ -37,7 +37,6 @@ class PriorityTrace(Trace):
 
         with name_lock.request() as lock:
             yield lock
-            print('interest on %s will be processed at %s' % (name, env.now.__str__()))
             # index lookup
             in_index = yield env.process(forwarder.index.cs_has_packet(name))
 
@@ -80,7 +79,7 @@ class PriorityTrace(Trace):
         forwarder.pit.add_entry(name, env.now + interest_life_time)
 
         penalty = get_penalty(response_time, priority)
-        print("penalty = %s " % penalty)
+        print("response_time = %s, priority = %s, penalty = %s " % (response_time, priority, penalty))
         forwarder.get_default_tier().penalty = forwarder.get_default_tier().penalty + penalty
 
         print("%s data is on its way" % name)

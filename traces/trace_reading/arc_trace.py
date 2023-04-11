@@ -39,7 +39,6 @@ class ARCTrace(Trace):
 
         with name_lock.request() as lock:
             yield lock
-            print('interest on %s will be processed at %s' % (name, env.now.__str__()))
             # index lookup
             in_index = yield env.process(forwarder.index.cs_has_packet(name))
 
@@ -48,7 +47,7 @@ class ARCTrace(Trace):
                 ti = yield env.process(forwarder.index.get_packet_tier(name))
                 print("cache hit, read packet %s from tier %s" % (name, ti.name))
 
-                yield env.process(tier.read_packet(env, res, packet))
+                yield env.process(ti.read_packet(env, res, packet))
 
                 # chr
                 ti.chr += 1
@@ -57,6 +56,8 @@ class ARCTrace(Trace):
                 else:
                     if priority == 'l':
                         ti.chr_lpc += 1
+
+                yield env.process(tier.read_packet(env, res, packet))
                 return
 
         # cache miss and pit hit
@@ -75,7 +76,7 @@ class ARCTrace(Trace):
         forwarder.pit.add_entry(name, env.now + interest_life_time)
 
         penalty = get_penalty(response_time, priority)
-        print("penalty = %s " % penalty)
+        print("response_time = %s, priority = %s, penalty = %s " % (response_time, priority, penalty))
         forwarder.get_default_tier().penalty = forwarder.get_default_tier().penalty + penalty
 
         print("%s data is on its way" % name)

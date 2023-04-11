@@ -35,6 +35,7 @@ class Plot:
         plot_number_write_ram = []  # number of write
         plot_high_p_data_retrieval_time_ram = []  # high priority data retrieval time
         plot_low_p_data_retrieval_time_ram = []  # low priority data retrieval time
+        plot_average_data_retrieval_time_ram = []  # average data retrieval time
 
         # disk
         plot_cache_hit_ratio_disk = []  # chr
@@ -47,10 +48,9 @@ class Plot:
         plot_high_p_data_retrieval_time_disk = []  # high priority data retrieval time
         plot_low_p_data_retrieval_time_disk = []  # low priority data retrieval time
         plot_read_throughput_disk = []  # read throughput of disk
+        plot_average_data_retrieval_time_disk = []  # average data retrieval time
         # plot_average_hit_response_time = []  # rh
         # plot_average_miss_response_time = []  # rm
-
-        plot_average_data_retrieval_time = []  # average data retrieval time
 
         # change directory to json files
         os.chdir(output_folder)
@@ -67,7 +67,7 @@ class Plot:
         for line in result:
             if line['tier_name'] == 'DRAM':
                 # average data retrieval time
-                plot_average_data_retrieval_time.append(line['average_data_retrieval_time'])
+                plot_average_data_retrieval_time_ram.append(line['average_data_retrieval_time'])
 
                 # chr
                 plot_cache_hit_ratio_ram.append(0.0) if nb_interests == 0 else plot_cache_hit_ratio_ram.append(
@@ -112,8 +112,11 @@ class Plot:
 
             if line['tier_name'] == 'NVMe':
                 # average data retrieval time
-                plot_average_data_retrieval_time[-1] = (plot_average_data_retrieval_time[-1] + line[
-                    'average_data_retrieval_time']) / 2
+                plot_average_data_retrieval_time_disk.append(line['average_data_retrieval_time'])
+
+                # # average data retrieval time
+                # plot_average_data_retrieval_time[-1] = (plot_average_data_retrieval_time[-1] + line[
+                #     'average_data_retrieval_time']) / 2
 
                 # read throughput
                 plot_read_throughput_disk.append(line['read_throughput'])
@@ -168,7 +171,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_chr.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_chr.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -184,7 +187,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"chr_hpc.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "chr_hpc.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -200,7 +203,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_chr_lpc.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_chr_lpc.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -216,7 +219,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_used_size.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_used_size.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -232,7 +235,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_waisted_size.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_waisted_size.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -248,7 +251,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_read_number.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_read_number.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -264,7 +267,7 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_write_number.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_write_number.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -281,7 +284,8 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_high_priority_data_retrieval_time.png"))
+            plt.savefig(
+                os.path.join(figure_folder, plot_content_store_config[0] + "_high_priority_data_retrieval_time.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -298,7 +302,25 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_low_priority_data_retrieval_time.png"))
+            plt.savefig(
+                os.path.join(figure_folder, plot_content_store_config[0] + "_low_priority_data_retrieval_time.png"))
+        except Exception as e:
+            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
+
+        # ==================
+        # data retrieval time
+        df = pd.DataFrame(
+            data={'DRAM': plot_average_data_retrieval_time_ram, 'DISK': plot_average_data_retrieval_time_disk})
+        df.index = plot_content_store_config
+
+        ax = df.plot(kind='bar', stacked=True, figsize=(17, 6), rot=0, xlabel='Content Store configuration',
+                     ylabel='Data Retrieval Time (ns)')
+        for c in ax.containers:
+            labels = [round(v.get_height(), 3) if v.get_height() > 0 else '' for v in c]
+            ax.bar_label(c, labels=labels, label_type='center')
+
+        try:
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_data_retrieval_time_per_tier.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
@@ -314,24 +336,23 @@ class Plot:
             ax.bar_label(c, labels=labels, label_type='center')
 
         try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_penalty.png"))
+            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0] + "_penalty.png"))
         except Exception as e:
             print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
 
-        # ==================
-        # read throughput disk
-        df = pd.DataFrame(data={'Data Retrieval Time ': plot_average_data_retrieval_time,
-                                'Average Network Response Time': [0.3] * len(plot_average_data_retrieval_time),
-                                'Average Node Access Time': [0.001] * len(plot_average_data_retrieval_time)})
-        df.index = plot_read_throughput_disk
-
-        ax = df.plot(figsize=(17, 6), rot=0, xlabel='Read Throughput Disk (GBPS)',
-                     ylabel='Time (s)')
-        for c in ax.containers:
-            labels = [v.get_height() if v.get_height() > 0 else '' for v in c]
-            ax.bar_label(c, labels=labels, label_type='center')
-
-        try:
-            plt.savefig(os.path.join(figure_folder, plot_content_store_config[0]+"_retrieval_time_per_read_throughput_disk.png"))
-        except Exception as e:
-            print(f'Error %s trying to write into a new file in output folder "{figure_folder}"' % e)
+        # # ==================
+        # # read throughput disk
+        # df = pd.DataFrame(data={'Data Retrieval Time ': plot_average_data_retrieval_time,
+        #                         'Average Network Response Time': [0.3] * len(plot_average_data_retrieval_time),
+        #                         'Average Node Access Time': [0.001] * len(plot_average_data_retrieval_time)})
+        # df.index = plot_read_throughput_disk
+        #
+        # ax = df.plot(figsize=(17, 6), rot=0, xlabel='Read Throughput Disk (GBPS)',
+        #              ylabel='Time (s)')
+        # for c in ax.containers:
+        #     labels = [v.get_height() if v.get_height() > 0 else '' for v in c]
+        #     ax.bar_label(c, labels=labels, label_type='center')
+        #
+        # try: plt.savefig(os.path.join(figure_folder, plot_content_store_config[
+        # 0]+"_retrieval_time_per_read_throughput_disk.png")) except Exception as e: print(f'Error %s trying to write
+        # into a new file in output folder "{figure_folder}"' % e)
