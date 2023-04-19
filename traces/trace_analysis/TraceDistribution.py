@@ -1,4 +1,8 @@
+import collections
 import csv
+
+import numpy as np
+from matplotlib import pyplot as plt
 
 
 # 'data_back', 'timestamp', 'name', 'size', 'priority', 'InterestLifetime', 'response_time'
@@ -30,6 +34,18 @@ class CSVTraceDistributions:
         traffic_period = t_end - t_start
 
         objects = [line[2] for line in lines]
+
+        # trace volume (req/s)
+        event_count = 0
+        last_timestamp = None
+        timestamp = None
+        for line in lines:
+            timestamp = line[1]
+            timestamp = float(timestamp)
+            if last_timestamp is not None and timestamp != last_timestamp:
+                event_count += 1
+            last_timestamp = timestamp
+        event_rate = event_count / (timestamp + 1)
 
         # frequency of objects
         # frequency = Counter(objects)
@@ -88,27 +104,22 @@ class CSVTraceDistributions:
         #
         # # average time of event occurrence
         # moy = diff / len(lines)
+        # Extract the object IDs from the trace data
+        object_ids = [line[2] for line in lines]
 
-        # number_of_packets = []
-        # i = 0
-        # h = 0
-        # for line in lines:
-        #     if i == 0:
-        #         h = float(line[1])
-        #     diff = float(line[1]) - h
-        #     if diff < 1000000000:  # 1 second
-        #         i += 1
-        #     else:
-        #         number_of_packets.append(i)
-        #         i = 0
-        # nb_req_per_s = sum(number_of_packets) / len(number_of_packets)
+        priority_map = {}
+        freq_count = collections.Counter(object_ids)
+        sorted_objects = sorted(freq_count.items(), key=lambda x: x[1], reverse=True)
+
+        for line in lines:
+            priority_map[line[2]] = line[4]
 
         with open('../../multi_tier_cache_simulator/resources/raw_dataset/stats/' + self.name
                   + '_Stats',
                   'w', encoding="utf-8",
                   newline='') as trace_file:
             trace_file.write("trace length : {}\n".format(trace_len))
-            trace_file.write("trace volume (req/s) : \n".format())
+            trace_file.write("trace volume (req/s) : {}\n".format(event_rate))
             trace_file.write("N unique objects : {}\n".format(nb_unique_obj))
             trace_file.write("average object size : {}\n".format(average_obj_size))
             trace_file.write("high priority percentage : {}\n".format(high_priority_percentage))
@@ -121,8 +132,38 @@ class CSVTraceDistributions:
             trace_file.write("minimum response time : {}\n".format(min_response_time))
             trace_file.write("maximum response time : {}\n".format(max_response_time))
             trace_file.write("low priority percentage : {}\n".format(1 - high_priority_percentage))
+            for obj, freq in sorted_objects:
+                trace_file.write(f"frequency: {freq}, priority: {priority_map[obj]}; ")
             # trace_file.write("objects frequency : {}\n".format(frequency))
             # trace_file.write("minimum time before event occurrence : {}\n".format(min_period))
             # trace_file.write("maximum time before event occurrence : {}\n".format(max_period))
             # trace_file.write("average time before event occurrence : {}\n".format(moy))
-            # trace_file.write("nb requests/s : {}\n".format(nb_req_per_s))
+
+        object_counts = {}
+        for event in lines:
+            object_id = event[2]
+            if object_id in object_counts:
+                object_counts[object_id] += 1
+            else:
+                object_counts[object_id] = 1
+
+        # Rank the objects in decreasing order of frequency
+        object_freq = sorted(object_counts.values(), reverse=True)
+
+        # Plot the frequency of each object against its rank on a log-log scale
+        x = np.arange(1, len(object_freq) + 1)
+        y = np.array(object_freq)
+        plt.loglog(x, y, marker='o')
+
+        # Fit a line to the plot using linear regression
+        coef = np.polyfit(np.log(x), np.log(y), 1)
+        poly1d_fn = np.poly1d(coef)
+        plt.loglog(x, np.exp(poly1d_fn(np.log(x))), '--')
+
+        # Check the goodness of fit by calculating the coefficient of determination (R-squared)
+        r_squared = np.corrcoef(np.log(x), np.log(y))[0, 1] ** 2
+        print("R-squared:", r_squared)
+
+        plt.xlabel('Rank')
+        plt.ylabel('Frequency')
+        plt.show()

@@ -1,8 +1,3 @@
-from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
-
-filename = "../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv"
-cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace000Part030000", 30000)
-cSVTraceDistributions.distributions()
 
 #
 # import csv
@@ -60,9 +55,29 @@ cSVTraceDistributions.distributions()
 #                 # chr = round(arc.cache_hit / arc.request, 2)
 #                 # print("arc cache hit ratio = %s" % chr)
 #
-# # plt.plot(q_arc.p_table[:1000])
-# # # plt.show()
+# # # plt.plot(q_arc.p_table[:1000])
+# # plt.show()
 # from traces.trace_creating_and_parsing.synthetic_trace import TraceCreator
-# traceCreator = TraceCreator(n_unique_items=10000, high_priority_content_percentage=0.5, zipf_alpha=1.0,
-#                             poisson_lambda=10, min_data_size=100, max_data_size=8000, min_data_rtt=0.01,
-#                             max_data_rtt=0.2, interest_lifetime=4, traffic_period=180)
+# traceCreator = TraceCreator(n_unique_items=10000, high_priority_content_percentage=0.2, pareto_alpha=0.8, zipf_alpha=0.5,
+#                             poisson_lambda=200, min_data_size=100, max_data_size=8000, min_data_rtt=0.01,
+#                             max_data_rtt=0.2, interest_lifetime=4, traffic_period=10)
+
+#
+# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+#
+# filename = "../resources/dataset_snia/cluster01.000-0.2.csv"
+# cSVTraceDistributions = CSVTraceDistributions(filename, "cluster", -1)
+# cSVTraceDistributions.distributions()
+
+#
+# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+#
+# filename = "../resources/datasets/synthetic-10000_200_0.5_0.2_10.csv"
+# cSVTraceDistributions = CSVTraceDistributions(filename, "synthetic-10000_200_0.5_0.2_1", -1)
+# cSVTraceDistributions.distributions()
+
+from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+
+filename = "../resources/dataset_snia/IBMObjectStoreTrace001Part0-2.0.csv"
+cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace001Part0-0.2", -1)
+cSVTraceDistributions.distributions()

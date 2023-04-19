@@ -29,20 +29,22 @@ if sys.version_info[0] < 3:
 
 # slot size allocation in dram and nvme
 slot_size = 8000
-# slot_size = 1378116288
+# slot_size = 2599616880
+# slot_size = 767
+slot_size = 5266467
 
 # turn the trace into packets
 arcTrace = ARCTrace()
 arcTrace.gen_data()
-# arcTrace.gen_data(trace_len_limit=30000)
+# arcTrace.gen_data(trace_len_limit=99999)
 
 priorityTrace = PriorityTrace()
 priorityTrace.gen_data()
-# priorityTrace.gen_data(trace_len_limit=30000)
+# priorityTrace.gen_data(trace_len_limit=99999)
 
 trace = CommonTrace()
 trace.gen_data()
-# trace.gen_data(trace_len_limit=30000)
+# trace.gen_data(trace_len_limit=99999)
 
 # number of requests on high priority content
 nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
@@ -66,7 +68,9 @@ except Exception as e:
 # 401758 9552 9034 9677 5952
 # total size 1000kB
 # total_size = slot_size * 595
-total_size = [slot_size * 10000 * 0.05]
+# total_size = [slot_size * 11186 * 0.005]
+# total_size = [slot_size * 11186 * 0.005]
+total_size = [slot_size * 80699 * 0.5]
 #
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
@@ -80,23 +84,23 @@ throughput = [2]
 
 # MQ_ARC
 arc_main("MQ_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
-         throughput, arcTrace, output_folder, True)
+         throughput, arcTrace, output_folder, False)
 
 # ARC
 arc_main("ARC", AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size_proportion, total_size, throughput,
          arcTrace, output_folder, True)
 
 # Priority
-policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder, True)
+policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder, False)
 
 # LRU
-policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder, True)
+policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
 # LFU
-policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder, True)
+policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
 # RAND
-policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder, True)
+policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
 # output_folder = "multi_tier_cache_simulator/logs/Mon_13_Mar_2023_10-47-26"
 Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)

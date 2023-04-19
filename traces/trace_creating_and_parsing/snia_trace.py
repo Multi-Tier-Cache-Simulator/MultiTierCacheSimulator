@@ -13,8 +13,8 @@ object_priority = dict()
 high_priority_content_percentage = 0.2
 i=0
 
-with open('../../resources/raw_dataset/IBMObjectStoreTrace000Part0') as f:
-    with open('../../resources/dataset_snia/IBMObjectStoreTrace000Part0.csv', 'w', encoding="utf-8",
+with open('../../resources/raw_dataset/raw/IBMObjectStoreTrace001Part0') as f:
+    with open('../../resources/dataset_snia/IBMObjectStoreTrace001Part0-2.0.csv', 'w', encoding="utf-8",
               newline='') as trace_file:
         for line in f:
 
@@ -30,7 +30,7 @@ with open('../../resources/raw_dataset/IBMObjectStoreTrace000Part0') as f:
                     object_priority[object_id] = "h" if random.random() < high_priority_content_percentage else "l"
                 if request_type == "REST.GET.OBJECT":
                     response_time = np.random.uniform(0.01, 0.2)
-                    interest_lifetime = 1000
+                    interest_lifetime = 4
                     i += 1
                     if i == trace_len_limit:
                         break

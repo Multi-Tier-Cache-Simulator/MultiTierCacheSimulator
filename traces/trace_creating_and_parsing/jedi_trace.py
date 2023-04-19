@@ -39,7 +39,8 @@ object_priority = []
 high_priority_content_percentage = 0.5
 last_timestamp = 0.0
 
-with open('../../resources/raw_dataset/eu_1000000_5') as f, open('../../resources/raw_dataset/eu_1000000_5.csv', 'w', encoding="utf-8", newline='') as trace_file:
+with open('../../resources/raw_dataset/raw/jedi_eu_1000000_5') as f, open(
+        '../../resources/datasets/eu_1000000_5.csv', 'w', encoding="utf-8", newline='') as trace_file:
     writer = csv.writer(trace_file)
     for line in f:
         split = line.strip().split(',')
@@ -49,8 +50,8 @@ with open('../../resources/raw_dataset/eu_1000000_5') as f, open('../../resource
             object_priority.extend(random.choices(['l', 'h'], k=object_id-len(object_priority)+1))
         priority = object_priority[object_id]
         response_time = np.random.uniform(0.01, 0.2)
-        interest_lifetime = 4000
+        interest_lifetime = 4
         if last_timestamp >= timestamp:
-            timestamp = last_timestamp + 0.0005
+            timestamp = last_timestamp + np.random.uniform(0.01, 0.2)
         writer.writerow(["d", timestamp, object_id, total_object_size, priority, interest_lifetime, response_time])
         last_timestamp = timestamp
