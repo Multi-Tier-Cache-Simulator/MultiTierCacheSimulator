@@ -61,7 +61,7 @@ class CSVTraceDistributions:
         min_obj_size = min(sizes)
 
         # max object size
-        max_obj_size = max(sizes)
+        max_obj_size = max([int(line[3]) for line in lines])
 
         # average object size
         average_obj_size = sum(sizes) / len(sizes)

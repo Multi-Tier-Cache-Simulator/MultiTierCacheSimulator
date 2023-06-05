@@ -39,7 +39,8 @@ class TraceCreator:
         for i in range(n_unique_items):
             size = int(round(np.random.uniform(min_data_size, max_data_size), 0))
             priority = "h" if random.random() < high_priority_content_percentage else "l"
-            packet = Packet("d", 0, i.__str__(), size, priority)
+            response_time = np.random.uniform(min_data_rtt, max_data_rtt)
+            packet = Packet("d", 0, i.__str__(), size, priority, response_time)
             unique_words[i] = packet
 
         with open('../resources/dataset_synthetic/synthetic-'
@@ -62,12 +63,11 @@ class TraceCreator:
                 index = zipf_distribution(zipf_alpha, len(unique_words))
                 while index >= len(unique_words):
                     index = zipf_distribution(zipf_alpha, len(unique_words))
-                # generate response time following
-                response_time = np.random.uniform(min_data_rtt, max_data_rtt)
                 # write the request to the trace file
                 trace_file.write(
                     "{},{},{},{},{},{},{}\n".format("d", req_time, unique_words[index].name, unique_words[index].size,
-                                                    unique_words[index].priority, interest_lifetime, response_time))
+                                                    unique_words[index].priority, interest_lifetime,
+                                                    unique_words[index].response_time))
 
         creation_time = time.time() - start_time
         print("trace creation took : %s " % creation_time)
@@ -79,7 +79,6 @@ class TraceCreator:
         #           'w', encoding="utf-8", newline='') as f:
         #     writer = csv.writer(f)
         #     writer.writerow("Trace creation took: " + creation_time.__str__())
-
 
 # def pareto_distribution(alpha, size):
 #     """Generate random samples from a Pareto distribution.

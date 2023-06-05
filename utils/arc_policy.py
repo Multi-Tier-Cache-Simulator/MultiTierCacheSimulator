@@ -72,7 +72,7 @@ class ARC(object):
     def on_packet_access(self, args):
         self.request += 1
         # Case I: x is in T1 or T2.
-        #  A cache hit has occurred in ARC(c) and DBL(2c)
+        #  A cache hit has occurred in MARC(c) and DBL(2c)
         #   Move x to MRU position in T2.
 
         if args in self.t1:
@@ -91,7 +91,7 @@ class ARC(object):
         self.cached[args] = result
 
         # Case II: x is in B1
-        #  A cache miss has occurred in ARC(c)
+        #  A cache miss has occurred in MARC(c)
         #   ADAPTATION
         #   REPLACE(x)
         #   Move x from B1 to the MRU position in T2 (also fetch x to the cache).
@@ -104,7 +104,7 @@ class ARC(object):
             return result
 
         # Case III: x is in B2
-        #  A cache miss has (also) occurred in ARC(c)
+        #  A cache miss has (also) occurred in MARC(c)
         #   ADAPTATION
         #   REPLACE(x, p)
         #   Move x from B2 to the MRU position in T2 (also fetch x to the cache).
@@ -117,7 +117,7 @@ class ARC(object):
             return result
 
         # Case IV: x is not in (T1 u B1 u T2 u B2)
-        #  A cache miss has occurred in ARC(c) and DBL(2c)
+        #  A cache miss has occurred in MARC(c) and DBL(2c)
 
         if len(self.t1) + len(self.b1) == self.c:
             # Case A: L1 (T1 u B1) has exactly c pages.

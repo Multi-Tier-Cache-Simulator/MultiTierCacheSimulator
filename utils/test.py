@@ -1,4 +1,3 @@
-
 #
 # import csv
 # import os
@@ -7,7 +6,7 @@
 # from matplotlib import pyplot as plt
 #
 # from utils.q_learning_arc_policy import Cache
-# from utils.arc_policy import ARC
+# from utils.arc_policy import MARC
 #
 # path = "../resources/dataset_synthetic/synthetic-200_10_1.2_0.5_30.csv"
 # # path = "../resources/dataset_synthetic/synthetic-200_10_1.2_0.5_30.csv"
@@ -37,7 +36,7 @@
 #                                    'results.csv'),
 #                       'w', encoding="utf-8", newline='') as f:
 #                 q_arc = Cache(c, learning_rate, discount_factor, epsilon)
-#                 arc = ARC(c)
+#                 arc = MARC(c)
 #                 for line in data:
 #                     q_arc.on_packet_access(line[2])
 #                     arc.on_packet_access(line[2])
@@ -65,19 +64,39 @@
 #
 # from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
 #
-# filename = "../resources/dataset_snia/cluster01.000-0.2.csv"
-# cSVTraceDistributions = CSVTraceDistributions(filename, "cluster", -1)
+# filename = "../resources/dataset_jedi/v.csv"
+# cSVTraceDistributions = CSVTraceDistributions(filename, "v", -1)
 # cSVTraceDistributions.distributions()
 
-#
-# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
-#
-# filename = "../resources/datasets/synthetic-10000_200_0.5_0.2_10.csv"
-# cSVTraceDistributions = CSVTraceDistributions(filename, "synthetic-10000_200_0.5_0.2_1", -1)
-# cSVTraceDistributions.distributions()
 
 from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
 
-filename = "../resources/dataset_snia/IBMObjectStoreTrace001Part0-2.0.csv"
-cSVTraceDistributions = CSVTraceDistributions(filename, "IBMObjectStoreTrace001Part0-0.2", -1)
+filename = "../resources/dataset_synthetic/synthetic-10000_229_0.5_0.2_7.csv"
+cSVTraceDistributions = CSVTraceDistributions(filename, "synthetic-10000_229_0.5_0.2_7.csv1", -1)
 cSVTraceDistributions.distributions()
+
+# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+#
+# filename = "../resources/datasets/cluster01.000-0.2-last.csv"
+# cSVTraceDistributions = CSVTraceDistributions(filename, "cluster01.000-0.2-last", -1)
+# cSVTraceDistributions.distributions()
+# s = [1, 0, 0]
+# c_max = [13, 9, 4]
+# index = 2
+# tier_nb = 0
+#
+# for i in range(len(s) - 1, -1, -1):
+#     if index <= s[i] != 0:
+#         tier_nb = i
+#         break
+# if index == 0 or s[tier_nb] < c_max[tier_nb]:
+#     new_index = index
+# else:
+#     new_index = index - s[0]
+#     for i in range(1, len(s)):
+#         if new_index >= 0:
+#             break
+#         else:
+#             new_index += s[i]
+#
+# print("index = %s, tier = %s" % (new_index, tier_nb))

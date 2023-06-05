@@ -7,11 +7,11 @@ from common.packet import Packet
 from common.penalty import get_alpha
 from forwarder_structures.content_store.tier import Tier
 from forwarder_structures.forwarder import Forwarder
-from policies.Q_learning_MQ_ARC.q_learning_agent import QLearningAgent
+from policies.QL_QM_ARC.ql_agent import QLearningAgent
 from policies.policy import Policy
 
 
-class AbstractQLQoSARCPolicy(Policy):
+class AbstractQLQMARCPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
 
@@ -21,7 +21,8 @@ class AbstractQLQoSARCPolicy(Policy):
         self.t1 = self.t1()  # T1: recent cache entries
         self.t2 = self.t2()  # T2: frequent entries
 
-        self.beta = self.forwarder.get_last_tier().max_size / self.forwarder.get_default_tier().max_size
+        self.beta_ssd = self.forwarder.get_next_tier(1).max_size / self.forwarder.get_default_tier().max_size
+        self.beta_disk = self.forwarder.get_next_tier(2).max_size / self.forwarder.get_default_tier().max_size
         # Init the Q-Learning Agent
         self.q_learning_agent = QLearningAgent(self.c, self.c, 0.1, 0.99, 0.1)
 
@@ -42,7 +43,6 @@ class AbstractQLQoSARCPolicy(Policy):
 
     def on_packet_access(self, env: Environment, res, packet: Packet, is_write: bool):
         print('%s in %s' % (self.tier.name, env.now))
-
         if self.c == 0:
             print("cache units == %s" % self.c)
             return
@@ -54,12 +54,12 @@ class AbstractQLQoSARCPolicy(Policy):
             if packet.priority == "h":
                 print("%s hit in t1, high priority, promote to MRU t2" % packet.name)
                 self.t1_remove(packet)
-                yield env.process(self.t2_append_left(env, res, packet, False))
+                yield env.process(self.t2_append_left(env, res, packet))
             else:
                 print("%s hit in t1, low priority, write to index in t2" % packet.name)
                 self.t1_remove(packet)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False))
-            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
+                global_pos = round(len(self.t2) * get_alpha())
+                yield env.process(self.t2_append_by_index(env, res, packet, global_pos))
 
             self.t1.__str__()
             self.t2.__str__()
@@ -73,12 +73,13 @@ class AbstractQLQoSARCPolicy(Policy):
             if packet.priority == "h":
                 print("%s hit in t2, high priority, promote to MRU t2" % packet.name)
                 self.t2_remove(packet)
-                yield env.process(self.t2_append_left(env, res, packet, False))
+                yield env.process(self.t2_append_left(env, res, packet))
             else:
                 print("%s hit in t2, low priority, write to index in t2" % packet.name)
+                current_pos = self.t2.__index__(packet.name)
+                new_pos = int(min(self.c - self.p, current_pos + round(len(self.t2) * get_alpha())))
                 self.t2_remove(packet)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), False))
-            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
+                yield env.process(self.t2_append_by_index(env, res, packet, new_pos))
 
             self.t1.__str__()
             self.t2.__str__()
@@ -97,11 +98,11 @@ class AbstractQLQoSARCPolicy(Policy):
             yield env.process(self.forwarder.index.del_packet_from_ghost(packet.name))
             if packet.priority == "h":
                 print("%s hit in b1, high priority, promote to MRU t2" % packet.name)
-                yield env.process(self.t2_append_left(env, res, packet, True))
+                yield env.process(self.t2_append_left(env, res, packet))
             else:
+                global_pos = round(len(self.t2) * get_alpha())
                 print("%s hit in b1, low priority, write to index in t2" % packet.name)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True))
-            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
+                yield env.process(self.t2_append_by_index(env, res, packet, global_pos))
 
             self.t1.__str__()
             self.t2.__str__()
@@ -120,11 +121,11 @@ class AbstractQLQoSARCPolicy(Policy):
             yield env.process(self.forwarder.index.del_packet_from_ghost(packet.name))
             if packet.priority == "h":
                 print("%s hit in b2, high priority, promote to MRU t2" % packet.name)
-                yield env.process(self.t2_append_left(env, res, packet, True))
+                yield env.process(self.t2_append_left(env, res, packet))
             else:
+                global_pos = round(len(self.t2) * get_alpha())
                 print("%s hit in b2, low priority, write to index in t2" % packet.name)
-                yield env.process(self.t2_append_by_index(env, res, packet, round(len(self.t2) / get_alpha()), True))
-            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
+                yield env.process(self.t2_append_by_index(env, res, packet, global_pos))
 
             self.t1.__str__()
             self.t2.__str__()
@@ -132,6 +133,7 @@ class AbstractQLQoSARCPolicy(Policy):
             self.forwarder.index.__str__(what="Ghost")
             print('%s out of %s' % (self.tier.name, env.now))
             return
+
         self.p = self.q_learning_agent.get_next_state(self.p, len(self.t1), len_b1, len_b2, "Miss")
         len_b1 = yield env.process(self.forwarder.index.ghost_len('b1'))
         if len(self.t1) + len_b1 == self.c:
@@ -160,10 +162,9 @@ class AbstractQLQoSARCPolicy(Policy):
             print("%s high priority, write to MRU t1" % packet.name)
             yield env.process(self.t1_append_left(env, res, packet))
         else:
-            print("%s low priority, write to index in t1" % packet.name)
-            index = round(len(self.t1) / get_alpha())
-            yield env.process(self.t1_append_by_index(env, res, packet, index))
-        yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.forwarder.get_default_tier()))
+            global_pos = round(len(self.t1) * get_alpha())
+            print("%s low priority, write to index %s in t1" % (packet.name, global_pos))
+            yield env.process(self.t1_append_by_index(env, res, packet, global_pos))
 
         self.t1.__str__()
         self.t2.__str__()
@@ -199,7 +200,7 @@ class AbstractQLQoSARCPolicy(Policy):
         return c
 
     def t1_pop(self, old):
-        self.t1.pop()
+        self.t1.remove(old.name)
         for tier in reversed(self.forwarder.tiers[1:]):
             for strategy in tier.strategies:
                 try:
@@ -214,7 +215,7 @@ class AbstractQLQoSARCPolicy(Policy):
                     print(e)
 
     def t2_pop(self, old):
-        self.t2.pop()
+        self.t2.remove(old.name)
         for tier in reversed(self.forwarder.tiers[1:]):
             for strategy in tier.strategies:
                 try:
@@ -260,39 +261,73 @@ class AbstractQLQoSARCPolicy(Policy):
         self.t1.append_left(packet.name, packet)
         yield env.process(self.forwarder.get_default_tier().write_packet_t1(env, res, packet))
 
-    def t2_append_left(self, env, res, packet, is_write: bool):
+    def t2_append_left(self, env, res, packet):
         self.t2.append_left(packet.name, packet)
-        yield env.process(self.forwarder.get_default_tier().write_packet_t2(env, res, packet, is_write))
+        yield env.process(self.forwarder.get_default_tier().write_packet_t2(env, res, packet))
 
     def t1_append_by_index(self, env, res, packet, index):
         self.t1.append_by_index(index, packet.name, packet)
-        print("index = %s" % index)
-        n = len(self.forwarder.tiers)
-        s = []
-        for tier in self.forwarder.tiers:
-            for strategy in tier.strategies:
-                s.append(len(strategy.t1))
-        i = n - 1
-        while i > 1 and index >= s[i]:
-            index -= s[i]
-            i -= 1
-        print("write to %s at index = %s" % (self.forwarder.tiers[i].name, index))
-        yield env.process(self.forwarder.tiers[i].write_packet_t1(env, res, packet, index))
+        print("new global pos is = %s" % index)
+        t1_tier_length = []
+        c_max = []
+        tier_nb = 0
 
-    def t2_append_by_index(self, env, res, packet, index, is_write: bool):
-        self.t2.append_by_index(index, packet.name, packet)
-        print("index = %s" % index)
-        n = len(self.forwarder.tiers)
-        s = []
         for tier in self.forwarder.tiers:
             for strategy in tier.strategies:
-                s.append(len(strategy.t2))
-        i = n - 1
-        while i > 1 and index >= s[i]:
-            index -= s[i]
-            i -= 1
-        print("write to %s at index = %s" % (self.forwarder.tiers[i].name, index))
-        yield env.process(self.forwarder.tiers[i].write_packet_t2(env, res, packet, is_write, index))
+                t1_tier_length.append(len(strategy.t1))
+                c_max.append(strategy.c)
+        print(t1_tier_length.__str__())
+        print(c_max.__str__())
+        for i in range(len(t1_tier_length) - 1, -1, -1):
+            if index <= t1_tier_length[i] != 0:
+                tier_nb = i
+                break
+        if tier_nb == 0:
+            tier_nb = 1
+        if index == 0 or t1_tier_length[tier_nb] < c_max[tier_nb]:
+            new_index = index
+        else:
+            new_index = index - t1_tier_length[0]
+            for i in range(1, len(t1_tier_length)):
+                if new_index >= 0:
+                    break
+                else:
+                    new_index += t1_tier_length[i]
+
+        print("write to %s at index = %s" % (self.forwarder.tiers[tier_nb].name, new_index))
+        yield env.process(self.forwarder.tiers[tier_nb].write_packet_t1(env, res, packet, new_index))
+
+    def t2_append_by_index(self, env, res, packet, index):
+        self.t2.append_by_index(index, packet.name, packet)
+        print("new global pos is = %s" % index)
+        t2_tier_length = []
+        c_max = []
+        tier_nb = 0
+
+        for tier in self.forwarder.tiers:
+            for strategy in tier.strategies:
+                t2_tier_length.append(len(strategy.t2))
+                c_max.append(strategy.c)
+        print(t2_tier_length.__str__())
+        print(c_max.__str__())
+        for i in range(len(t2_tier_length) - 1, -1, -1):
+            if index <= t2_tier_length[i] != 0:
+                tier_nb = i
+                break
+        if tier_nb == 0:
+            tier_nb = 1
+        if index == 0 or t2_tier_length[tier_nb] < c_max[tier_nb]:
+            new_index = index
+        else:
+            new_index = index - t2_tier_length[0]
+            for i in range(1, len(t2_tier_length)):
+                if new_index >= 0:
+                    break
+                else:
+                    new_index += t2_tier_length[i]
+
+        print("write to %s at index = %s" % (self.forwarder.tiers[tier_nb].name, new_index))
+        yield env.process(self.forwarder.tiers[tier_nb].write_packet_t2(env, res, packet, new_index))
 
     def increment_p(self, len_b1, len_b2):
         for strategy in self.forwarder.get_default_tier().strategies:
@@ -301,9 +336,15 @@ class AbstractQLQoSARCPolicy(Policy):
                 break
             except Exception as e:
                 print(e)
-        for strategy in self.forwarder.get_last_tier().strategies:
+        for strategy in self.forwarder.get_next_tier(1).strategies:
             try:
-                strategy.p = min(strategy.c, strategy.p + max((len_b2 / len_b1) * self.beta, self.beta))
+                strategy.p = min(strategy.c, strategy.p + max((len_b2 / len_b1) * self.beta_ssd, self.beta_ssd))
+                break
+            except Exception as e:
+                print(e)
+        for strategy in self.forwarder.get_next_tier(2).strategies:
+            try:
+                strategy.p = min(strategy.c, strategy.p + max((len_b2 / len_b1) * self.beta_disk, self.beta_disk))
                 break
             except Exception as e:
                 print(e)
@@ -315,9 +356,15 @@ class AbstractQLQoSARCPolicy(Policy):
                 break
             except Exception as e:
                 print(e)
-        for strategy in self.forwarder.get_last_tier().strategies:
+        for strategy in self.forwarder.get_next_tier(1).strategies:
             try:
-                strategy.p = max(0, strategy.p - max((len_b1 / len_b2) * self.beta, self.beta))
+                strategy.p = max(0, strategy.p - max((len_b1 / len_b2) * self.beta_ssd, self.beta_ssd))
+                break
+            except Exception as e:
+                print(e)
+        for strategy in self.forwarder.get_next_tier(2).strategies:
+            try:
+                strategy.p = max(0, strategy.p - max((len_b1 / len_b2) * self.beta_disk, self.beta_disk))
                 break
             except Exception as e:
                 print(e)

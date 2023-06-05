@@ -9,7 +9,7 @@ from forwarder_structures.forwarder import Forwarder
 from policies.policy import Policy
 
 
-class DISKQoSARCPolicy(Policy):
+class QMARCPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
 
@@ -48,15 +48,27 @@ class DISKQoSARCPolicy(Policy):
             self.forwarder.index.__str__(what="Ghost")
             print('%s leaving the resource at %s for %s %s' % (self.tier.name, env.now, is_write, packet.name))
 
-    def on_packet_access_t1(self, env: Environment, res, packet: Packet, index=-1):
-        print('%s arriving at %s for %s' % (self.tier.name, env.now, packet.name))
+    def on_packet_access_t1(self, env, res, packet: Packet, index=-1):
+        print('%s arriving at %s' % (self.tier.name, env.now))
+        # if cache full, send data to disk
+        if len(self.t1) + len(self.t2) >= self.c:
+            # if len of T1 is higher than P move from T1 dram to T1 disk
+            if self.t1 and len(self.t1) >= self.p:
+                yield env.process(self.send_to_next_level_t1(env, res))
+            # move from T2 dram to T2 disk
+            elif self.t2:
+                yield env.process(self.send_to_next_level_t2(env, res))
+            else:
+                yield env.process(self.send_to_next_level_t1(env, res))
 
-        if index != -1:
-            self.t1.append_by_index(index, packet.name, packet)
-            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
-        else:
+        if index == -1:
+            print('insert into %s at MRU pos' % self.tier.name)
             self.t1.append_left(packet.name, packet)
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
+        else:
+            print('insert into %s at pos :%s' % (self.tier.name, index))
+            self.t1.append_by_index(index, packet.name, packet)
+            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
 
         # increment number of writes
         self.tier.number_of_packets += 1
@@ -80,15 +92,25 @@ class DISKQoSARCPolicy(Policy):
             print('%s leaving the resource at %s' % (self.tier.name, env.now))
             return
 
-    def on_packet_access_t2(self, env: Environment, res, packet: Packet, index=-1):
-        print('%s arriving at %s for %s' % (self.tier.name, env.now, packet.name))
+    def on_packet_access_t2(self, env, res, packet: Packet, index=-1):
+        print('%s arriving at %s' % (self.tier.name, env.now))
+        # if cache full, send data to disk
+        if len(self.t1) + len(self.t2) >= self.c:
+            if self.t1 and len(self.t1) >= self.p:
+                yield env.process(self.send_to_next_level_t1(env, res))
+            # move from T2 dram to T2 disk
+            elif self.t2:
+                yield env.process(self.send_to_next_level_t2(env, res))
+            else:
+                yield env.process(self.send_to_next_level_t1(env, res))
 
-        if index != -1:
-            self.t2.append_by_index(index, packet.name, packet)
-            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
-        else:
+        if index == -1:
             self.t2.append_left(packet.name, packet)
             yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
+        else:
+            print("write to index : %s" % index)
+            self.t2.append_by_index(index, packet.name, packet)
+            yield env.process(self.forwarder.index.update_packet_tier(packet.name, self.tier))
 
         # increment number of writes
         self.tier.number_of_packets += 1
@@ -111,3 +133,50 @@ class DISKQoSARCPolicy(Policy):
             self.forwarder.index.__str__(what="Ghost")
             print('%s leaving the resource at %s' % (self.tier.name, env.now))
             return
+
+    def send_to_next_level_t1(self, env: Environment, res):
+        try:
+            target_tier_id = self.forwarder.tiers.index(self.tier) + 1
+            self.forwarder.tiers[target_tier_id].number_of_eviction_to_this_tier += 1
+
+            name, packet = self.t1.get_without_pop()
+            self.t1.pop()
+            self.tier.number_of_eviction_from_this_tier += 1
+            self.tier.number_of_packets -= 1
+            self.tier.used_size -= packet.size
+            print('send packet %s from t1 dram to t1 disk' % packet.name)
+
+            # Disk is free
+            if len(res[target_tier_id].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
+                print("evict from t1 to disk %s" % packet.name)
+                yield env.process(self.forwarder.tiers[target_tier_id].write_packet_t1(env, res, packet, index=-1,
+                                                                                       cause='eviction'))
+            # disk is overloaded --> drop packet
+            else:
+                print("drop packet %s" % packet.name)
+        except Exception as e:
+            print("error : %s" % e)
+
+    def send_to_next_level_t2(self, env: Environment, res):
+        try:
+            target_tier_id = self.forwarder.tiers.index(self.tier) + 1
+            self.forwarder.tiers[target_tier_id].number_of_eviction_to_this_tier += 1
+
+            name, packet = self.t2.get_without_pop()
+            self.t2.pop()
+            self.tier.number_of_eviction_from_this_tier += 1
+            self.tier.number_of_packets -= 1
+            self.tier.used_size -= packet.size
+            print('send packet %s from t2 dram to t2 disk' % packet.name)
+
+            # Disk is free
+            if len(res[target_tier_id].queue) < self.forwarder.tiers[target_tier_id].submission_queue_max_size:
+                print("evict from t2 to disk %s" % packet.name)
+                yield env.process(
+                    self.forwarder.tiers[target_tier_id].write_packet_t2(env, res, packet, index=-1,
+                                                                         cause='eviction'))
+            # disk is overloaded --> drop packet
+            else:
+                print("drop packet %s" % packet.name)
+        except Exception as e:
+            print("error : %s" % e)

@@ -43,8 +43,11 @@ class Tier:
         self.chr_hpc = 0  # cache hit ratio for high priority content
         self.chr_lpc = 0  # cache hit ratio for low priority content
         self.cmr = 0  # cache miss ratio
+        self.cmr_hpc = 0  # cache miss ratio for high priority content
+        self.cmr_lpc = 0  # cache miss ratio for low priority content
 
-        self.penalty = 0  # eviction penalty
+        self.penalty_hpc = 0  # eviction penalty for high priority content cache miss
+        self.penalty_lpc = 0  # eviction penalty for low priority content cache miss
 
         self.submission_queue_max_size = 64  # disk structure
 

@@ -8,8 +8,8 @@ class Index:
     # add the time of writing to the index as well ?
     def __init__(self, env):
         self.mutex = simpy.Resource(env, capacity=1)  # mutex on the index of capacity
-        self.active_index = dict()  # key: packet_name, value: tier
-        self.ghost_index = dict()  # key: packet_name, value: b1 or b2
+        self.active_index = {}  # key: packet_name, value: tier
+        self.ghost_index = {}  # key: packet_name, value: b1 or b2
         self._b1 = Deque()
         self._b2 = Deque()
 

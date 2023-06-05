@@ -2,23 +2,15 @@ import os
 import sys
 import time
 
-from experiments import arc_main, policy_main
 from plots.plot_creation import Plot
-from policies.ARC.abstract_arc_policy import AbstractARCPolicy
-from policies.ARC.disk_arc_policy import DISKARCPolicy
-from policies.ARC.dram_arc_policy import DRAMARCPolicy
-# from policies.Q_learning_MQ_ARC.abstract_ql_mq_arc_policy import AbstractQLQoSARCPolicy
-# from policies.Q_learning_MQ_ARC.disk_ql_mq_arc_policy import DISKQLQoSARCPolicy
-# from policies.Q_learning_MQ_ARC.dram_ql_mq_arc_policy import DRAMQLQoSARCPolicy
-from policies.MQ_ARC.abstract_mq_arc_policy import AbstractQoSARCPolicy
-from policies.MQ_ARC.disk_mq_arc_policy import DISKQoSARCPolicy
-from policies.MQ_ARC.dram_mq_arc_policy import DRAMQoSARCPolicy
+from experiments import arc_main, policy_main
 from policies.lfu_policy import LFUPolicy
 from policies.lru_policy import LRUPolicy
 from policies.random_policy import RandPolicy
 from traces.trace_reading.arc_trace import ARCTrace
 from traces.trace_reading.common_trace import CommonTrace
 from traces.trace_reading.priority_trace import PriorityTrace
+
 
 # time is in nanos
 # size is in byte
@@ -27,11 +19,16 @@ from traces.trace_reading.priority_trace import PriorityTrace
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
-# slot size allocation in dram and nvme
-slot_size = 8000
-# slot_size = 2599616880
-# slot_size = 767
-slot_size = 5266467
+# log files
+output_folder = "logs/<timestamp>"
+output_folder = output_folder.replace('/', os.path.sep).replace("<timestamp>",
+                                                                time.strftime("%a_%d_%b_%Y_%H-%M-%S", time.localtime()))
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), output_folder))
+try:
+    os.makedirs(output_folder, exist_ok=True)
+except Exception as e:
+    print(f'Error trying to create output folder "{output_folder}"')
+    print(e)
 
 # turn the trace into packets
 arcTrace = ARCTrace()
@@ -46,49 +43,40 @@ trace = CommonTrace()
 trace.gen_data()
 # trace.gen_data(trace_len_limit=99999)
 
-# number of requests on high priority content
-nb_high_priority = [line for line in trace.data if line[4] == 'h'].__len__()
-# number of requests on low priority content
-nb_low_priority = [line for line in trace.data if line[4] == 'l'].__len__()
-# total number of requests
-nb_interests = len(trace.data)
-print("nb_high_priority %s, nb_low_priority %s, nb_interests %s" % (nb_high_priority, nb_low_priority, nb_interests))
 
-# log files
-output_folder = "logs/<timestamp>"
-output_folder = output_folder.replace('/', os.path.sep).replace("<timestamp>",
-                                                                time.strftime("%a_%d_%b_%Y_%H-%M-%S", time.localtime()))
-output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), output_folder))
-try:
-    os.makedirs(output_folder, exist_ok=True)
-except Exception as e:
-    print(f'Error trying to create output folder "{output_folder}"')
-    print(e)
+slot_size = max([int(line[3]) for line in trace.data])
+nb_objects = len(list(set([line[2] for line in trace.data])))
 
-# 401758 9552 9034 9677 5952
-# total size 1000kB
-# total_size = slot_size * 595
-# total_size = [slot_size * 11186 * 0.005]
-# total_size = [slot_size * 11186 * 0.005]
-total_size = [slot_size * 80699 * 0.5]
-#
+total_size = [slot_size * nb_objects * 0.005]
+
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
 size_proportion = [2 / 10]
 
 # read throughput
 throughput = [2]
-#
-# # QL_QoS_ARC arc_main("QL_QoS_ARC", AbstractQLQoSARCPolicy, DRAMQLQoSARCPolicy, DISKQLQoSARCPolicy, slot_size,
-# size_proportion, total_size, throughput, arcTrace, output_folder)
 
-# MQ_ARC
-arc_main("MQ_ARC", AbstractQoSARCPolicy, DRAMQoSARCPolicy, DISKQoSARCPolicy, slot_size, size_proportion, total_size,
+# M_ARC
+m_arc = ["AbstractMARCPolicy", "MARCPolicy", "MARCPolicy"]
+m_arc_fromlist = ["policies.MARC.abstract_m_arc_policy", "policies.MARC.tier_m_arc_policy",
+                  "policies.MARC.tier_m_arc_policy"]
+arc_main("M_ARC", m_arc, m_arc_fromlist, slot_size, size_proportion, total_size, throughput,
+         arcTrace, output_folder, False)
+
+# QM_ARC
+qm_arc = ["AbstractQMARCPolicy", "QMARCPolicy", "QMARCPolicy"]
+qm_arc_fromlist = ["policies.QM_ARC.abstract_qm_arc_policy", "policies.QM_ARC.tier_qm_arc_policy",
+                   "policies.QM_ARC.tier_qm_arc_policy"]
+arc_main("QM_ARC", qm_arc, qm_arc_fromlist, slot_size, size_proportion, total_size,
          throughput, arcTrace, output_folder, False)
 
-# ARC
-arc_main("ARC", AbstractARCPolicy, DRAMARCPolicy, DISKARCPolicy, slot_size, size_proportion, total_size, throughput,
-         arcTrace, output_folder, True)
+# QL_MQ_ARC
+ql_qm_arc = ["AbstractQLQMARCPolicy", "QLQMARCPolicy", "QLQMARCPolicy"]
+ql_qm_arc_fromlist = ["policies.QL_QM_ARC.abstract_ql_qm_arc_policy",
+                      "policies.QL_QM_ARC.tier_ql_qm_arc_policy",
+                      "policies.QL_QM_ARC.tier_ql_qm_arc_policy"]
+arc_main("QL_QM_ARC", ql_qm_arc, ql_qm_arc_fromlist, slot_size, size_proportion, total_size,
+         throughput, arcTrace, output_folder, False)
 
 # Priority
 policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder, False)
@@ -102,5 +90,5 @@ policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, out
 # RAND
 policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
 
-# output_folder = "multi_tier_cache_simulator/logs/Mon_13_Mar_2023_10-47-26"
-Plot(output_folder, slot_size, nb_interests, nb_high_priority, nb_low_priority)
+# output_folder = "C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/logs/Mon_05_Jun_2023_09-01-52"
+Plot(output_folder, slot_size)

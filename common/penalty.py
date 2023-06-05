@@ -1,31 +1,31 @@
-import numpy as np
+min_high_prio_penalty = 100
+max_high_prio_penalty = 1000
 
+min_low_prio_penalty = 10
+max_low_prio_penalty = 200
 
-def penalty_by_priority():
-    alpha = 3
-    if 1 / alpha < np.random.uniform():
-        return True
-    else:
-        return False
+low_prio_disk_penalty = 1
+high_prio_disk_penalty = 40
 
 
 def get_alpha():
-    return 3
+    alpha = max_low_prio_penalty / max_high_prio_penalty
+    return alpha
 
 
 def get_penalty(response_time, priority) -> int:
     if priority == "h":
+        if response_time == 0.0:
+            return high_prio_disk_penalty
         if response_time < 0.1:
-            return 0
-        elif response_time < 0.15:
-            return 6
-        elif response_time >= 0.15:
-            return 9
+            return min_high_prio_penalty
+        elif response_time >= 0.1:
+            return max_high_prio_penalty
 
     elif priority == "l":
+        if response_time == 0.0:
+            return low_prio_disk_penalty
         if response_time < 0.1:
-            return 0
-        elif response_time < 0.15:
-            return 2
-        elif response_time >= 0.15:
-            return 3
+            return min_low_prio_penalty
+        elif response_time >= 0.1:
+            return max_low_prio_penalty

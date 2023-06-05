@@ -9,7 +9,7 @@ from forwarder_structures.forwarder import Forwarder
 from policies.policy import Policy
 
 
-class AbstractARCPolicy(Policy):
+class AbstractMARCPolicy(Policy):
     def __init__(self, env: Environment, forwarder: Forwarder, tier: Tier):
         Policy.__init__(self, env, forwarder, tier)
 
@@ -18,6 +18,9 @@ class AbstractARCPolicy(Policy):
         self.p = 0  # Target size for the list T1
         self.t1 = self.t1()  # T1: recent cache entries
         self.t2 = self.t2()  # T2: frequent entries
+
+        self.beta_ssd = self.forwarder.get_next_tier(1).max_size / self.forwarder.get_default_tier().max_size
+        self.beta_disk = self.forwarder.get_next_tier(2).max_size / self.forwarder.get_default_tier().max_size
 
     def _replace(self, env: Environment, packet: Packet):
         in_b2 = yield env.process(self.forwarder.index.packet_in_ghost(packet.name, 'b2'))
@@ -224,7 +227,45 @@ class AbstractARCPolicy(Policy):
         yield env.process(self.forwarder.get_default_tier().write_packet_t2(env, res, packet))
 
     def increment_p(self, len_b1, len_b2):
-        self.p = min(self.c, self.p + max(len_b2 / len_b1, 1))
+        self.p = min(self.c, self.p + max((len_b2 / len_b1) * (1 + self.beta_ssd + self.beta_disk),
+                                          1 + self.beta_ssd + self.beta_disk))
+        for strategy in self.forwarder.get_default_tier().strategies:
+            try:
+                strategy.p = min(strategy.c, strategy.p + max(len_b2 / len_b1, 1))
+                break
+            except Exception as e:
+                print(e)
+        for strategy in self.forwarder.get_next_tier(1).strategies:
+            try:
+                strategy.p = min(strategy.c, strategy.p + max((len_b2 / len_b1) * self.beta_ssd, self.beta_ssd))
+                break
+            except Exception as e:
+                print(e)
+        for strategy in self.forwarder.get_next_tier(2).strategies:
+            try:
+                strategy.p = min(strategy.c, strategy.p + max((len_b2 / len_b1) * self.beta_disk, self.beta_disk))
+                break
+            except Exception as e:
+                print(e)
 
     def decrement_p(self, len_b1, len_b2):
-        self.p = max(0, self.p - max(len_b1 / len_b2, 1))
+        self.p = max(0, self.p - max((len_b1 / len_b2) * (1 + self.beta_ssd + self.beta_disk),
+                                     1 + self.beta_ssd + self.beta_disk))
+        for strategy in self.forwarder.get_default_tier().strategies:
+            try:
+                strategy.p = max(0, strategy.p - max((len_b1 / len_b2), 1))
+                break
+            except Exception as e:
+                print(e)
+        for strategy in self.forwarder.get_next_tier(1).strategies:
+            try:
+                strategy.p = max(0, strategy.p - max((len_b1 / len_b2) * self.beta_ssd, self.beta_ssd))
+                break
+            except Exception as e:
+                print(e)
+        for strategy in self.forwarder.get_next_tier(2).strategies:
+            try:
+                strategy.p = max(0, strategy.p - max((len_b1 / len_b2) * self.beta_disk, self.beta_disk))
+                break
+            except Exception as e:
+                print(e)
