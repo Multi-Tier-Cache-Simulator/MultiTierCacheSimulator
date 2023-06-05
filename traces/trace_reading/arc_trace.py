@@ -30,7 +30,7 @@ class ARCTrace(Trace):
         response_time = float(response_time)
 
         # create the packet
-        packet = Packet(data_back, timestamp, name, size, priority, response_time)
+        packet = Packet(data_back, timestamp, name, size, priority)
 
         tier = forwarder.tiers[0]
 
