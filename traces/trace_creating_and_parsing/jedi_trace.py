@@ -36,7 +36,7 @@ import random
 import numpy as np
 
 object_priority = []
-high_priority_content_percentage = 0.5
+high_priority_content_percentage = 0.2
 object_response_time = dict()
 last_timestamp = 0.0
 

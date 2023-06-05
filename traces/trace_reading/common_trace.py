@@ -30,7 +30,7 @@ class CommonTrace(Trace):
         response_time = float(response_time)
 
         # create the packet
-        packet = Packet(data_back, timestamp, name, size, priority)
+        packet = Packet(data_back, timestamp, name, size, priority, response_time)
 
         # update the pit table entries by deleting the expired ones
         forwarder.pit.update_times(env)
