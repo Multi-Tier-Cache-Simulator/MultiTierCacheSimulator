@@ -47,7 +47,7 @@ trace.gen_data()
 slot_size = max([int(line[3]) for line in trace.data])
 nb_objects = len(list(set([line[2] for line in trace.data])))
 
-total_size = [slot_size * nb_objects * 0.005]
+total_size = [(slot_size * nb_objects * 10) / 100]
 
 # proportions
 # size_proportion = [1 / 10, 2 / 10, 3 / 10, 4 / 10]
@@ -79,16 +79,16 @@ arc_main("QL_QM_ARC", ql_qm_arc, ql_qm_arc_fromlist, slot_size, size_proportion,
          throughput, arcTrace, output_folder, False)
 
 # Priority
-policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, priorityTrace, output_folder, False)
+policy_main("PriorityLRU", LRUPolicy, slot_size, size_proportion, total_size, throughput, priorityTrace, output_folder, False)
 
 # LRU
-policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
+policy_main("LRU", LRUPolicy, slot_size, size_proportion, total_size, throughput, trace, output_folder, False)
 
 # LFU
-policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
+policy_main("LFU", LFUPolicy, slot_size, size_proportion, total_size, throughput, trace, output_folder, False)
 
 # RAND
-policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, trace, output_folder, False)
+policy_main("Rand", RandPolicy, slot_size, size_proportion, total_size, throughput, trace, output_folder, False)
 
 # output_folder = "C:/Users/gl_ai/OneDrive/Documents/multi_tier_cache_simulator/logs/Mon_05_Jun_2023_09-01-52"
 Plot(output_folder, slot_size)

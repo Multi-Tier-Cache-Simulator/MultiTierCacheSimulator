@@ -35,24 +35,29 @@ import csv
 import random
 import numpy as np
 
-object_priority = []
+object_priority = {}
+object_response_time = {}
 high_priority_content_percentage = 0.2
-object_response_time = dict()
 last_timestamp = 0.0
+trace_len_limit = 100000
+i = 0
 
-with open('../../resources/raw_dataset/raw/jedi_eu_1000000_5') as f, open(
-        '../../resources/datasets/eu_1000000_5.csv', 'w', encoding="utf-8", newline='') as trace_file:
+with open('../../resources/raw_dataset/raw/jedi_w') as f, open(
+        '../../resources/datasets/w_0.2.csv', 'w', encoding="utf-8", newline='') as trace_file:
     writer = csv.writer(trace_file)
     for line in f:
         split = line.strip().split(',')
         timestamp, object_id, total_object_size = map(int, split[:3])
         timestamp /= 1000
-        if object_id >= len(object_priority):
-            object_priority.extend(random.choices(['l', 'h'], k=object_id - len(object_priority) + 1))
+        if object_id not in object_response_time.keys():
+            object_priority[object_id] = "h" if random.random() < high_priority_content_percentage else "l"
             object_response_time[object_id] = np.random.uniform(0.01, 0.2)
         interest_lifetime = 4
         if last_timestamp >= timestamp:
             timestamp = last_timestamp + np.random.uniform(0.01, 0.2)
         writer.writerow(["d", timestamp, object_id, total_object_size, object_priority[object_id], interest_lifetime,
                          object_response_time[object_id]])
+        i += 1
+        if i == trace_len_limit:
+            break
         last_timestamp = timestamp

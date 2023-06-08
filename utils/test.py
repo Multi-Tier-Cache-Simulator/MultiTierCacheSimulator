@@ -62,18 +62,18 @@
 #                             max_data_rtt=0.2, interest_lifetime=4, traffic_period=10)
 
 #
-# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
-#
-# filename = "../resources/dataset_jedi/v.csv"
-# cSVTraceDistributions = CSVTraceDistributions(filename, "v", -1)
-# cSVTraceDistributions.distributions()
-
-
 from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
 
 filename = "../resources/dataset_synthetic/synthetic-10000_229_0.5_0.2_7.csv"
-cSVTraceDistributions = CSVTraceDistributions(filename, "synthetic-10000_229_0.5_0.2_7.csv1", -1)
+cSVTraceDistributions = CSVTraceDistributions(filename, "synthetic-10000_229_0.5_0.2_7_stats", -1)
 cSVTraceDistributions.distributions()
+
+
+# from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
+#
+# filename = "../resources/dataset_synthetic/synthetic-10000_229_0.5_0.2_7.csv"
+# cSVTraceDistributions = CSVTraceDistributions(filename, "synthetic-10000_229_0.5_0.2_7.csv1", -1)
+# cSVTraceDistributions.distributions()
 
 # from traces.trace_analysis.TraceDistribution import CSVTraceDistributions
 #

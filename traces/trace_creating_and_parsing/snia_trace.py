@@ -8,17 +8,17 @@ import numpy as np
 # NDN trace column names = ("data_back", "timestamp", "name", "size", "priority", "InterestLifetime", "responseTime")
 # http://iotta.snia.org/traces/block-io/388
 
-trace_len_limit = 100000
-object_priority = dict()
-object_response_time = dict()
+
+object_priority = {}
+object_response_time = {}
 high_priority_content_percentage = 0.2
+trace_len_limit = 100000
 i = 0
 
 with open('../../resources/raw_dataset/raw/IBMObjectStoreTrace001Part0') as f:
     with open('../../resources/datasets/IBMObjectStoreTrace001Part0-2.0.csv', 'w', encoding="utf-8",
               newline='') as trace_file:
         for line in f:
-
             # print("line : %s" % line)
             split = line.split(' ')
             # print("split: %s" % split)
