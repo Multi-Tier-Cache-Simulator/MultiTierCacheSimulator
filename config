@@ -1,3 +1,0 @@
-slot_size = 100000
-nb_units = 10000
-total_size = slot_size * nb_units
